@@ -1,13 +1,15 @@
 # RemoteControl
-## 许可: MIT
-## 开发环境: VS2017
-## 功能
-- CMD执行（完善中）
-可远程启动CMD
-- 文件传输（完善中）
-服务端可从客户端下载文件或上传文件到客户端
-+ 心跳检测（完善中）
-客户端定时发送心跳检测到服务端, 服务端刷新时间，如果超时则断开链接
+## License: MIT
+## Dev Environment: VS2017
+## Ability
+- CMD.（profecting..）
+- File transmission.（profecting..）
+- Process manager.
+## another
+- HearBeat.（profecting..）
 
-## 描述
-客户端与服务端均基于IOCP模型、使用TCP进行网络通信，程序会读取当前目录下的.ini文件来获取配置
+
+## Description
+Client and Server both use IOCP modle to connection. 
+Server is single document mode， and client is dialog mode（profecting..）.
+
