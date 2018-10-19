@@ -78,8 +78,8 @@ BEGIN_MESSAGE_MAP(CFileTransferDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BTN_TARGETHOST_SKIP, &CFileTransferDlg::OnBnClickedBtnTargethostSkip)
     ON_BN_CLICKED(IDC_BTN_GETFILE, &CFileTransferDlg::OnBnClickedBtnGetfile)
     ON_BN_CLICKED(IDC_BTN_PUTFILE, &CFileTransferDlg::OnBnClickedBtnPutfile)
-    ON_WM_CLOSE()
     ON_NOTIFY(NM_DBLCLK, IDC_LST_TARGETHOST_FILELIST, &CFileTransferDlg::OnNMDblclkLstTargethostFilelist)
+    ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -370,63 +370,72 @@ void CFileTransferDlg::ShowFileList(CListCtrl &ref_lstTarget,
         WaitForSingleObject(m_hGetTargetFileListEvent, INFINITE);
 
         int iIdx = 0;
+        std::basic_string<TCHAR> strFileList = m_csFileList.GetString();
         // 遍历插入文件列表
-        while (!m_csFileList.IsEmpty())
+        while (!strFileList.empty())
         {
-            // 获取单个文件信息
-            CString csFileInfo;
-            int iFileInfoSeparatePos = m_csFileList.Find(_T('|'));
-            csFileInfo = m_csFileList.Left(iFileInfoSeparatePos);
-            m_csFileList =
-                m_csFileList.Right(
-                    m_csFileList.GetLength() - iFileInfoSeparatePos - 1);
+            // First is index of Icon.
+            // Secound is Filename.
+            // Third is write time of file.
+            // Forth is size of file.
+            // Fifth is type of file.
+            std::match_results<const TCHAR*> sMatchResult;
+            std::basic_regex<TCHAR> rgxFileInfoMode(
+                _T("([^\\?]*)\\?([^\\?]*)\\?([^\\?]*)\\?([^\\?]*)\\?"
+                   "([^|\\?]*)\\|"));
 
+            bool bFound = std::regex_search<TCHAR>(strFileList.c_str(),
+                                                   sMatchResult,
+                                                   rgxFileInfoMode);
 
-            // 获取文件的图标索引
-            int iFileSeparatePos = csFileInfo.Find(_T('?'));
-            CString csIconIndex = csFileInfo.Left(iFileSeparatePos);
-            csFileInfo =
-                csFileInfo.Right(
-                    csFileInfo.GetLength() - iFileSeparatePos - 1);
-            int iIconIndex = _ttoi(csIconIndex);
-
-            // 获取文件的名称
-            iFileSeparatePos = csFileInfo.Find(_T('?'));
-            CString csFileName = csFileInfo.Left(iFileSeparatePos);
-            csFileInfo =
-                csFileInfo.Right(
-                    csFileInfo.GetLength() - iFileSeparatePos - 1);
-
-
-            // 获取文件的时间
-            iFileSeparatePos = csFileInfo.Find(_T('?'));
-            CString csFileWriteTime = csFileInfo;
-            if (iFileSeparatePos == -1)
+            if (bFound)
             {
-                csFileWriteTime = csFileInfo;
+                std::basic_string<TCHAR> strIconIndex = sMatchResult[1];
+                std::basic_string<TCHAR> strFileName = sMatchResult[2];
+                std::basic_string<TCHAR> strFileWriteTime = sMatchResult[3];
+                std::basic_string<TCHAR> strFileSize = sMatchResult[4];
+                std::basic_string<TCHAR> strFileType = sMatchResult[5];
+
+                // Insert file info.
+                int iIconIndex = _ttoi(strIconIndex.c_str());
+                // File name.
+                m_lstTargetHostFileList.InsertItem(
+                    iIdx,
+                    strFileName.c_str(),
+                    iIconIndex);
+
+                // File type.
+                m_lstTargetHostFileList.SetItemText(iIdx,
+                                                    FLCT_FILETYPE,
+                                                    strFileType.c_str());
+
+                // File size. Filesize is null when it's "0".
+                if (_T("0") == strFileSize)
+                {
+                    strFileSize = _T("");
+                }
+                m_lstTargetHostFileList.SetItemText(iIdx,
+                                                    FLCT_FILESIZE,
+                                                    strFileSize.c_str());
+
+                // Add time if filelist's style is report. 
+                if (m_iTargetHostActiveStyleIdx == FLS_REPORT)
+                {
+                    m_lstTargetHostFileList.SetItemText(
+                        iIdx,
+                        FLCT_WRITETIME,
+                        strFileWriteTime.c_str());
+                }
+                // 插入的位置索引递增
+                ++iIdx;
+
+                // Get remaind text.
+                strFileList = sMatchResult.suffix();
             }
             else
             {
-                OutputDebugString(_T("文件解析失败"));
+                OutputDebugString(_T("正则表达式有误"));
             }
-
-            // 插入文件信息
-            m_lstTargetHostFileList.InsertItem(
-                iIdx,
-                csFileName,
-                iIconIndex);
-
-
-            // 如果文件格式是Report，则添加时间
-            if (m_iTargetHostActiveStyleIdx == FLS_REPORT)
-            {
-                m_lstTargetHostFileList.SetItemText(
-                    iIdx,
-                    FLCT_WRITETIME,
-                    csFileWriteTime);
-            }
-            // 插入的位置索引递增
-            ++iIdx;
         } //! while (Traversing and insert filelist) END
     } // if (Target host) END
     // Local host
@@ -514,13 +523,14 @@ CString CFileTransferDlg::GetSubName(CComboBox &ref_cmbDevice,
     CString csDrive;
     CString csSubPath;
     
-    // 获取盘符
+    // Get Driver.
     int iIndex = ref_cmbDevice.GetCurSel();
     ref_cmbDevice.GetLBText(iIndex, csDrive);
 
-    // 获取子路径
+    // Get subpath.
     ref_edtFilePath.GetWindowText(csSubPath);
-    // 判断最后一个字符是否是反斜杠，不是的话就增加
+
+    // Add '\' if the lastest character isn't '\'.
     if (csSubPath.Right(1) != _T("\\") &&
         !csSubPath.IsEmpty())
     {
@@ -537,11 +547,11 @@ void CFileTransferDlg::BackParentDirctory(CComboBox &ref_cmbDevice,
 {
     CString csDrive;
     CString csSubPath;
-     // 获取盘符
+    // Get Driver.
     int iIndex = ref_cmbDevice.GetCurSel();
     ref_cmbDevice.GetLBText(iIndex, csDrive);
 
-    // 获取子路径
+    // Get subpath.
     ref_edtFilePath.GetWindowText(csSubPath);
 
     // *注意* FindFile要执行成功，需要保证后面没有反斜杠
@@ -638,6 +648,7 @@ void CFileTransferDlg::OnNMDblclkLstServerFilelist(NMHDR *pNMHDR,
         }
 
         // 拼接子名字
+        // 
         CString csTargetFileSubName = csTargetFileTitle;
         GetSubName(m_cmbServerDevice,
                    m_edtServerFilePath,
@@ -647,7 +658,7 @@ void CFileTransferDlg::OnNMDblclkLstServerFilelist(NMHDR *pNMHDR,
                         m_edtServerFilePath,
                         &csTargetFileTitle))
         {
-            // 更改标题栏的文本
+            // Update text of title.
             m_edtServerFilePath.SetWindowText(csTargetFileSubName);
             ShowFileList(m_lstServerFileList,
                          m_cmbServerDevice,
@@ -674,10 +685,10 @@ void CFileTransferDlg::OnCbnSelchangeCmbServerFilelistStyle()
 // that device of local host.
 void CFileTransferDlg::OnCbnSelchangeCmbServerDevice()
 {
-    // 置空路径
+    // Clean edit of path.
     m_edtServerFilePath.SetWindowText(_T(""));
 
-    // 显示文件列表
+    // Show file list.
     ShowFileList(m_lstServerFileList,
                  m_cmbServerDevice,
                  m_edtServerFilePath,
@@ -717,16 +728,72 @@ void CFileTransferDlg::OnBnClickedBtnTargethostSkip()
 } //! CFileTransferDlg::OnBnClickedBtnTargethostSkip END
 
 
+// Deal with click the '<' button.
 void CFileTransferDlg::OnBnClickedBtnGetfile()
 {
-    // TODO: 在此添加控件通知处理程序代码
+    // Format: "FilePath?FileName|FileName|..."
+    CString csFilesListSendToTargetHost;
+
+    // Get name of files need to downlord, and add mission to task manager.
+    POSITION posI = m_lstTargetHostFileList.GetFirstSelectedItemPosition();
+    if (NULL == posI)
+    {
+        TRACE(_T("No items were selected!\n"));
+    }
+    else
+    {
+        CString csFileName;
+        CString csFileSize;
+        CString csFileFullName;
+
+        // Get full path.
+        CString csFileSubPath;
+        CString csDriveLetter;
     
-    // Add mission to task list.
+        int iIndex = m_cmbTargetHostDevice.GetCurSel();
+        m_cmbTargetHostDevice.GetLBText(iIndex, csDriveLetter);
+
+        m_edtTargetHostFilePath.GetWindowText(csFileSubPath);
+
+        csFilesListSendToTargetHost = csDriveLetter + csFileSubPath + _T("?");
+
+        // Traversing Item.
+        while (posI)
+        {
+            int iItemIndex = m_lstTargetHostFileList.GetNextSelectedItem(posI);
+
+            csFileName =
+                m_lstTargetHostFileList.GetItemText(iItemIndex, FLCT_FILENAME);
+            csFileSize = 
+                m_lstTargetHostFileList.GetItemText(iItemIndex, FLCT_FILESIZE);
+
+            csFileFullName = csDriveLetter + csFileSubPath + csFileName;
+
+            // Add to the send list.
+            csFilesListSendToTargetHost += csFileName + _T(":0") + _T("|");
+
+            //*************************************
+            //*ALARM* This memory will free when manager distroy.
+            //*************************************
+            PFILETRANSPORTTASK pstTaskInfo = new FILETRANSPORTTASK;
+            pstTaskInfo->csFileFullPath_ = csFileFullName;
+            pstTaskInfo->eTaskType_ = FTT_GETFILE;
+            pstTaskInfo->uint64FileTotalSize_ = _ttoi(csFileSize);
+            pstTaskInfo->uint64TransmissionSize_ = 0;
+            pstTaskInfo->eTaskState_ = FTS_START;
+
+            // Add task to manager.
+            m_TransportTaskManager.InsertGetFileTask(csFileName, pstTaskInfo);
+        } // while "Traversing Item" END
+    } //! if "Item is selected" END
 
     // Send file command and file list to target host.
+    SendDataUseIOCP(m_pstClientInfo,
+                    m_ref_IOCP,
+                    csFilesListSendToTargetHost,
+                    PT_FILECOMMAND_GETFILE);
 
-    // 
-}
+} //! CFileTransferDlg::OnBnClickedBtnGetfile END
 
 
 void CFileTransferDlg::OnBnClickedBtnPutfile()
@@ -735,31 +802,7 @@ void CFileTransferDlg::OnBnClickedBtnPutfile()
 }
 
 
-void CFileTransferDlg::OnClose()
-{
-    // TODO: 在此添加消息处理程序代码和/或调用默认值
-    do
-    {
-        CWnd *pParentDlg = GetParent();
-        if (pParentDlg == NULL)
-        {
-            break;
-        }
 
-        BOOL bRet = pParentDlg->PostMessage(WM_HASDLGCLOSE,
-            (WPARAM)m_pstClientInfo,
-                                            (LPARAM)CDT_FILETRANSFER);
-        if (!bRet)
-        {
-#ifdef DEBUG
-
-#endif // DEBUG
-        }
-    } while (FALSE);
-
-
-    CDialogEx::OnClose();
-}
 
 // Deal with double clicks in file list of target host.
 void CFileTransferDlg::OnNMDblclkLstTargethostFilelist(NMHDR *pNMHDR, 
@@ -797,7 +840,7 @@ void CFileTransferDlg::OnNMDblclkLstTargethostFilelist(NMHDR *pNMHDR,
                         m_edtTargetHostFilePath,
                         &csTargetFileTitle))
         {
-            // 更改标题栏的文本
+            // Modify the text of title.
             m_edtTargetHostFilePath.SetWindowText(csTargetFileSubName);
             ShowFileList(m_lstTargetHostFileList,
                          m_cmbTargetHostDevice,
@@ -809,3 +852,9 @@ void CFileTransferDlg::OnNMDblclkLstTargethostFilelist(NMHDR *pNMHDR,
     *pResult = 0;
 } //! CFileTransferDlg::OnNMDblclkLstTargethostFilelist END
 
+void CFileTransferDlg::OnClose()
+{
+    // TODO: 在此添加消息处理程序代码和/或调用默认值
+
+    CDialogEx::OnClose();
+}

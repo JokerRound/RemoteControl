@@ -86,7 +86,7 @@ afx_msg LRESULT CCmdDlg::OnHascmdreply(WPARAM wParam, LPARAM lParam)
 
     m_edtCmd.SetWindowText(m_csScreen);
 
-        // ×Ô¶¯ÏÂÒÆ
+    // Focus auto move down.
     int nLenth = m_edtCmd.GetWindowTextLength();
     m_edtCmd.SetSel(nLenth, nLenth, FALSE);
     m_edtCmd.SetFocus();

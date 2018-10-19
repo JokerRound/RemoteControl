@@ -129,16 +129,18 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
                 {
 #ifdef DEBUG
                     OutputDebugStringWithInfo(csErrorMessage,
-                                              __FILEW__, 
+                                              __FILET__, 
                                               __LINE__);
 #endif // DEBUG
                     // Finish loop and threads exits.
                     break;
                 }
             }
+#ifdef DEBUG
             OutputDebugStringWithInfo(csErrorMessage,
-                                      __FILEW__,
+                                      __FILET__,
                                       __LINE__);
+#endif // DEBUG
             continue;
         }
 
@@ -291,7 +293,7 @@ BOOL CCommunicationIOCP::PostSendRequst(const SOCKET sctTarget,
         return TRUE;
     } while (FALSE);
     
-    // 异常回收资源
+    // Free resource when had errored.
     if (pstOverlappedWithData == NULL)
     {
         delete pstOverlappedWithData;
@@ -308,7 +310,9 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
     do
     {
         DWORD dwRecvedBytes = 0;
-        // *注意* 该空间在处理完收到的数据后尽快释放
+        //****************************************
+        //*ALARM* This memory will free when IOCP deal with it finished.
+        //****************************************
         pstOverlappedWithData = new OVERLAPPEDWITHDATA();
 
         if (pstOverlappedWithData == NULL)
@@ -317,7 +321,7 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
             break;
         }
 
-        // buffer和长度赋值
+        // Give buffer and length.
         pstOverlappedWithData->eIOCPType_ = IOCP_RECV;
         pstOverlappedWithData->stBuffer_.buf = 
             pstOverlappedWithData->szPacket_;
@@ -340,15 +344,16 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
             break;
         }
 
-        // 结束
+        // End
         return TRUE;
     } while (FALSE);
     
-    // 异常回收资源
+    // Free resource when had errored.
     if (pstOverlappedWithData == NULL)
     {
         delete pstOverlappedWithData;
         pstOverlappedWithData = NULL;
     }
+
     return FALSE;
 } //! CCommunicationIOCP::PostRecvRequst END

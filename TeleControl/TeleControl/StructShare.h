@@ -13,7 +13,21 @@ class CCmdDlg;
 class CProcessManagerDlg;
 class CScreenShowerDlg;
 
-// 通信包类型
+namespace std
+{
+#ifdef _UNICODE
+    typedef std::wstring tstring;
+    typedef std::wsmatch tsmatch;
+    typedef std::wcmatch tcmatch;
+#else
+    typedef std::string tstring;
+    typedef std::smatch tsmatch;
+    typedef std::cmatch tcmatch;
+#endif
+}
+
+
+// Type of packet
 typedef enum tagPacketType
 {
     PT_TESE,
@@ -21,11 +35,16 @@ typedef enum tagPacketType
     PT_SCREENPICTURE,
     PT_PROCESS_INFO,
     PT_PROCESSCOMMAND_KILL,
+    // Used when get target host file list.
     PT_FILE_LIST,
+    // Used when get target host device.
     PT_FILE_DEVICE,
+    // Used when need to get or put file.
     PT_FILE_DATA,
     PT_FILECOMMAND_PUTFILE,
     PT_FILECOMMAND_GETFILE,
+    PT_FILECOMMAND_PAUSE,
+    PT_FILECOMMAND_CONTINUE,
     PT_CMD_ORDER,
     PT_CMD_REPLY,
     PT_CMDCOMMAND_START,

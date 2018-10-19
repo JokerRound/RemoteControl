@@ -9,18 +9,17 @@ CClientManager::CClientManager()
 
 CClientManager::~CClientManager()
 {
+    m_CriticalSection.Lock();
     Destory();
+    m_CriticalSection.Unlock();
 }
 
-BOOL CClientManager::InsertClient(const SOCKET &sctTargetSocket,
-                                  tagClientInfo *pClientInfo)
+void CClientManager::InsertClient(const SOCKET &sctTargetSocket,
+                                  tagClientInfo *pstClientInfo)
 {
-    // Update client info.
     m_CriticalSection.Lock();
-    m_mapClient.SetAt(sctTargetSocket, pClientInfo);
+    m_mapClient.SetAt(sctTargetSocket, pstClientInfo);
     m_CriticalSection.Unlock();
-
-    return TRUE;
 }
 
 BOOL CClientManager::InsertSocket(const CString &ref_csIPAndPort,
@@ -100,19 +99,24 @@ void CClientManager::Destory()
     if (!m_mapClient.IsEmpty())
     {
         SOCKET sctTmp = SOCKET_ERROR;
-        PCLIENTINFO pClientInfoTmp = NULL;
+        PCLIENTINFO pstClientInfoTmp = NULL;
         // Get first postion.
         POSITION posI = m_mapClient.GetStartPosition();
 
         while (posI != NULL)
         {
-            m_mapClient.GetNextAssoc(posI, sctTmp, pClientInfoTmp);
+            m_mapClient.GetNextAssoc(posI, sctTmp, pstClientInfoTmp);
 
             // Main stage.
-            if (NULL != pClientInfoTmp)
+            if (NULL != pstClientInfoTmp)
             {
-                delete pClientInfoTmp;
-                pClientInfoTmp = NULL;
+                if (NULL != pstClientInfoTmp->pFileTransferDlg_)
+                {
+
+                }
+
+                delete pstClientInfoTmp;
+                pstClientInfoTmp = NULL;
             }
 
             // Shutdown the socket.

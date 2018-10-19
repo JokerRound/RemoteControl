@@ -36,10 +36,12 @@ public:
     // 线程工作回调
     static DWORD ThreadWork(LPVOID lpParam);
 
+
     // 投递接收请求
     BOOL PostSendRequst(const SOCKET sctTarget, CBuffer &SendBuffer);
     // 投递发送请求
     BOOL PostRecvRequst(const SOCKET sctTarget);
+
 
 };
 

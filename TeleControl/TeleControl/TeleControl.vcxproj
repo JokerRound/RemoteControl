@@ -192,6 +192,7 @@
     <ClInclude Include="CommunicationIOCP.h" />
     <ClInclude Include="FileTransferDlg.h" />
     <ClInclude Include="FileTransferStruct.h" />
+    <ClInclude Include="FileTransportManager.h" />
     <ClInclude Include="HostListView.h" />
     <ClInclude Include="LogListView.h" />
     <ClInclude Include="MacroShare.h" />
@@ -217,6 +218,7 @@
     <ClCompile Include="CmdEdit.cpp" />
     <ClCompile Include="CommunicationIOCP.cpp" />
     <ClCompile Include="FileTransferDlg.cpp" />
+    <ClCompile Include="FileTransportManager.cpp" />
     <ClCompile Include="HostListView.cpp" />
     <ClCompile Include="LogListView.cpp" />
     <ClCompile Include="MainFrm.cpp" />

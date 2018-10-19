@@ -7,12 +7,11 @@
 
 class CClientManager
 {
-public:
+private:
     // Binding client infomation with SOCKET.
     CMap<SOCKET, SOCKET, tagClientInfo *, tagClientInfo *> m_mapClient;
     // Binding SOCKET with IP and port. 
     CMap<CString, LPCTSTR, SOCKET, SOCKET> m_mapIPPortWithSocket;
-private:
     // 
     CCriticalSection m_CriticalSection;
 public:
@@ -22,7 +21,7 @@ public:
     //**********************************************************************
     // FUNTION:     Insert client infomation to m_mapClient
     // OUPUT:       None
-    // RETURN:      Successful (TRUE) or failure (FALSE)
+    // RETURN:      Void
     // PARAMETER:
     //      sctTargetSocket:    A socket which take to bind, it's Key in map
     //      pClientInfo:        A ClientInfo point which bind with socket,
@@ -30,19 +29,19 @@ public:
     // NOTE:        
     //      1. Point cann't be NULL.
     //**********************************************************************
-    BOOL InsertClient(_In_ const SOCKET &sctTargetSocket,
-                      _In_ tagClientInfo *pClientInfo);
+    void InsertClient(_In_ const SOCKET &sctTargetSocket,
+                      _In_ tagClientInfo *pstClientInfo);
 
 
     // Insert SOECKET to m_mapIPPortWithSocket
     BOOL InsertSocket(_In_ const CString &ref_csIPAndPort, 
                       _In_ const SOCKET &ref_sctTargetSocket);
 
-    SOCKET GetSocket(const CString &csIPAndPort);
+    SOCKET GetSocket(_In_ const CString &csIPAndPort);
 
-    tagClientInfo *GetClient(const SOCKET &sctTargetSocket);
+    tagClientInfo *GetClient(_In_ const SOCKET &sctTargetSocket);
 
-    BOOL RemoveClient(const SOCKET &sctTargetSocket);
+    BOOL RemoveClient(_In_ const SOCKET &sctTargetSocket);
 
     // Clean and free resource
     void Destory();

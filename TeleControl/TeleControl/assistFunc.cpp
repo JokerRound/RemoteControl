@@ -67,9 +67,52 @@ void GetErrorMessage(DWORD dwError, CString &csMessage)
     else
     {
 #ifdef DEBUG
-        
+        OutputDebugStringWithInfo(_T("Can't find the error message."), 
+                                  __FILET__, 
+                                  __LINE__);
 #endif // DEBUG
     }
 
     LocalFree(hLocal);
 } //! GetErrorMessage END
+
+// Package the process that send data.
+BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
+                     CCommunicationIOCP &ref_IOCP,
+                     CString &ref_csData,
+                     PACKETTYPE ePacketType)
+{
+    PPACKETFORMAT pstPacket =
+        (PPACKETFORMAT)ref_pstClientInfo->szSendTmpBuffer_;
+
+    //*************************************
+    //*ALARM* Synchronize
+    //*************************************
+    ref_pstClientInfo->CriticalSection_.Lock();
+    pstPacket->ePacketType_ = ePacketType;
+
+    pstPacket->dwSize_ = (ref_csData.GetLength() + 1) * sizeof(TCHAR);
+
+    memmove(pstPacket->szContent_,
+            ref_csData.GetBuffer(),
+            pstPacket->dwSize_);
+
+    ref_pstClientInfo->SendBuffer_.Write(
+        (PBYTE)ref_pstClientInfo->szSendTmpBuffer_,
+        PACKET_HEADER_SIZE + pstPacket->dwSize_);
+
+    // Clean send buffer temporary.
+    memset(ref_pstClientInfo->szSendTmpBuffer_,
+           0,
+           PACKET_HEADER_SIZE + pstPacket->dwSize_);
+
+    // Make IOCP to deal with send.
+    BOOL bRet =
+        ref_IOCP.PostSendRequst(ref_pstClientInfo->sctClientSocket_,
+                                ref_pstClientInfo->SendBuffer_);
+
+    ref_pstClientInfo->SendBuffer_.ClearBuffer();
+    ref_pstClientInfo->CriticalSection_.Unlock();
+
+    return bRet;
+} //! SendDataUseIOCP END

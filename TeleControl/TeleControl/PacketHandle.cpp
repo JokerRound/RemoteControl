@@ -83,6 +83,24 @@ BOOL OnFileDevice(SOCKET sctTargetSocket,
     return TRUE;
 }
 
+BOOL OnFileData(SOCKET sctTargetSocket,
+                char *szBuffer,
+                size_t uiLen,
+                PCLIENTINFO pstClientInfo,
+                CCommunicationIOCP &IOCP)
+{
+    CString csFileData;
+    szBuffer[uiLen] = _T('\0');
+    csFileData = szBuffer;
+    memset(szBuffer, 0, uiLen);
+
+    BOOL bRet = TRUE;
+    //BOOL bRet = pstClientInfo->pFileTransferDlg_->SendMessage();
+
+    return bRet;
+} //! OnFileData END
+
+// Deal with the reply from target host.
 BOOL OnCMDReply(SOCKET sctTargetSocket,
                 char *szBuffer,
                 size_t uiLen,
@@ -97,9 +115,11 @@ BOOL OnCMDReply(SOCKET sctTargetSocket,
         pstClintInfo->pCmdDlg_->SendMessage(WM_HASCMDREPLY,
                                             (WPARAM)&csCmdReply,
                                             0);
+
     return bRet;
 }
 
+// Deal with the info from target host.
 BOOL OnProcessInfo(SOCKET sctTargetSocket,
                    char *pszBuffer,
                    size_t uiLen,
@@ -227,6 +247,10 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
                 OutputDebugString(_T("主机盘符信息处理失败"));
             }
             break;
+        }
+        case PT_FILE_DATA:
+        {
+
         }
         case PT_PROCESS_INFO:
         {

@@ -3,6 +3,7 @@
 #include "afxcmn.h"
 #include "CommunicationIOCP.h"
 #include "StructShare.h"
+#include "FileTransportManager.h"
 
 // CFileTransferDlg 对话框
 
@@ -40,19 +41,19 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-    // 盘符获取完毕事件
+    // The event that had got driver.
     HANDLE m_hGetTargetDeviceEvent = NULL;
-    // 文件列表获取完毕事件
+    // The event that had got file list.
     HANDLE m_hGetTargetFileListEvent = NULL;
-    // Server端当前文件列表风格
+    // The sytle of server's filelist.
     int m_iServerActiveStyleIdx = 0;
-    // 目标当前文件列表风格
+    // The sytle of target host's filelist.
     int m_iTargetHostActiveStyleIdx = 0;
-    // 服务器盘符列表
+    // The driver list of server.
     CComboBox m_cmbServerDevice;
-    // 服务器端文件路径
+    // The file path of server.
     CEdit m_edtServerFilePath;
-    // 目标端的文件列表
+    // the file list of target host.
     CString m_csFileList;
     // 目标端的盘符
     CString m_csTargetHostDevice;
@@ -85,20 +86,26 @@ public:
     CComboBox m_cmbTargetHostFileListStyle;
     CListCtrl m_lstServerFileList;
     CListCtrl m_lstTargetHostFileList;
-    afx_msg void OnNMDblclkLstServerFilelist(NMHDR *pNMHDR, LRESULT *pResult);
-    afx_msg void OnCbnSelchangeCmbServerFilelistStyle();
-    afx_msg void OnCbnSelchangeCmbServerDevice();
+
     // 目标主机盘符
     CComboBox m_cmbTargetHostDevice;
     // 传输任务列表
     CListCtrl m_lstTransferTask;
     // 目标主机文件路径
     CEdit m_edtTargetHostFilePath;
+
+    // The manager of task transmission.
+    CFileTransportManager m_TransportTaskManager;
+
+    afx_msg void OnNMDblclkLstServerFilelist(NMHDR *pNMHDR, LRESULT *pResult);
+    afx_msg void OnCbnSelchangeCmbServerFilelistStyle();
+    afx_msg void OnCbnSelchangeCmbServerDevice();
+
     afx_msg void OnCbnSelchangeCmbTargethostFilelistStyle();
     afx_msg void OnCbnSelchangeCmbTargethostDevice();
     afx_msg void OnBnClickedBtnTargethostSkip();
     afx_msg void OnBnClickedBtnGetfile();
     afx_msg void OnBnClickedBtnPutfile();
-    afx_msg void OnClose();
     afx_msg void OnNMDblclkLstTargethostFilelist(NMHDR *pNMHDR, LRESULT *pResult);
+    afx_msg void OnClose();
 };
