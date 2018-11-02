@@ -74,39 +74,3 @@ void GetErrorMessage(DWORD dwError, CString &csMessage)
     LocalFree(hLocal);
 } //! GetErrorMessage END
 
-void SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
-                     CCommunicationIOCP &ref_IOCP,
-                     CString &ref_csData,
-                     PACKETTYPE ePacketType)
-{
-    // 投递请求消息获取目标路径的文件
-    PPACKETFORMAT pstPacket =
-        (PPACKETFORMAT)ref_pstClientInfo->szSendTmpBuffer_;
-
-    // *注意* 写入数据时要加锁
-    ref_pstClientInfo->CriticalSection_.Lock();
-    pstPacket->ePacketType_ = ePacketType;
-    pstPacket->dwSize_ =
-        (ref_csData.GetLength() + 1) * sizeof(TCHAR);
-
-    memmove(pstPacket->szContent_,
-            ref_csData.GetBuffer(),
-            pstPacket->dwSize_);
-
-    ref_pstClientInfo->SendBuffer_.Write(
-        (PBYTE)ref_pstClientInfo->szSendTmpBuffer_,
-        PACKET_HEADER_SIZE + pstPacket->dwSize_);
-
-    // 清理发送临时缓冲区
-    memset(ref_pstClientInfo->szSendTmpBuffer_,
-           0,
-           PACKET_HEADER_SIZE + pstPacket->dwSize_);
-
-    // 投递发送请求
-    BOOL bRet =
-        ref_IOCP.PostSendRequst(ref_pstClientInfo->sctClientSocket_,
-                                ref_pstClientInfo->SendBuffer_);
-
-    ref_pstClientInfo->SendBuffer_.ClearBuffer();
-    ref_pstClientInfo->CriticalSection_.Unlock();
-} //! SendDataUseIOCP END

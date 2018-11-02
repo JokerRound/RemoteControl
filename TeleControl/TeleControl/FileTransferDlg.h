@@ -4,42 +4,75 @@
 #include "CommunicationIOCP.h"
 #include "StructShare.h"
 #include "FileTransportManager.h"
+#include "RecvFileDataThread.h"
 
 // CFileTransferDlg 对话框
 
 class CFileTransferDlg : public CDialogEx
 {
-	DECLARE_DYNAMIC(CFileTransferDlg)
+    DECLARE_DYNAMIC(CFileTransferDlg)
 
 public:
-	CFileTransferDlg(CString &ref_csIPAndPort,
+    CFileTransferDlg(CString &ref_csIPAndPort,
                      PCLIENTINFO pstClientInfo,
                      CCommunicationIOCP &ref_IOCP,
                      CWnd* pParent = NULL);   // 标准构造函数
-	virtual ~CFileTransferDlg();
+    virtual ~CFileTransferDlg();
 
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_FILETRANSFER };
+    enum { IDD = IDD_FILETRANSFER };
 #endif
 private:
-    // 盘符
     CString m_csDevice;
     CImageList *m_pSysSmallIconImageList = NULL;
     CImageList *m_pSysBigIconImageList = NULL;
 
-
     // IOCP
     CCommunicationIOCP &m_ref_IOCP;
-    // IP和端口
+    // Ip and port.
     CString &m_ref_csIPAndPort;
-    // Client上下文
+    // Client context.
     PCLIENTINFO m_pstClientInfo = NULL;
+    // The queue of data from target host.
+    std::queue<FILEDATAINQUEUE> m_queFileData;
+    // Thread recevie file data.
+    CRecvFileDataThread *m_pthdRecvFileData = NULL;
+    BOOL m_bProcessQuit = FALSE;
+    CCriticalSection m_CriticalSection;
+    CEvent *m_pevtHadFiletoReceive = NULL;
+
+    const CString m_acsTaskType[NUM_FILETASKTYPE] = {
+        _T("Download"),
+        _T("Upload"),
+    };
+    const CString m_acsTaskStatus[NUM_FILETASKSTATUS] = {
+        _T("Start"),
+        _T("Transporting"),
+        _T("Pause"),
+        _T("Finish")
+    };
+
+    void FreeResource();
+    void UpdateTransportList();
+public:
+    void InsertFileDataToQueue(_In_ FILEDATAINQUEUE &ref_stFileData);
+    FILEDATAINQUEUE GetFileDataFromQueue();
+    BOOL CheckFileDataQueueEmpty();
+
+
+    BOOL CheckProcessQuitFlag() const
+    {
+        return m_bProcessQuit;
+    }
+    
+    BOOL WaitRecvFileEvent();
+
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
-	DECLARE_MESSAGE_MAP()
+    DECLARE_MESSAGE_MAP()
 public:
     // The event that had got driver.
     HANDLE m_hGetTargetDeviceEvent = NULL;
@@ -108,4 +141,6 @@ public:
     afx_msg void OnBnClickedBtnPutfile();
     afx_msg void OnNMDblclkLstTargethostFilelist(NMHDR *pNMHDR, LRESULT *pResult);
     afx_msg void OnClose();
+protected:
+    afx_msg LRESULT OnHasfiledata(WPARAM wParam, LPARAM lParam);
 };

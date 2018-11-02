@@ -15,7 +15,7 @@ CProcessManagerDlg::CProcessManagerDlg(CString &ref_csIPAndPort,
                                        PCLIENTINFO pstClientInfo,
                                        CCommunicationIOCP &ref_IOCP,
                                        CWnd* pParent /*=NULL*/)
-	: CDialogEx(IDD_PROCESSMANAGER, pParent)
+    : CDialogEx(IDD_PROCESSMANAGER, pParent)
     , m_ref_IOCP(ref_IOCP)
     , m_ref_csIPAndPort(ref_csIPAndPort)
 {
@@ -28,7 +28,7 @@ CProcessManagerDlg::~CProcessManagerDlg()
 
 void CProcessManagerDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogEx::DoDataExchange(pDX);
+    CDialogEx::DoDataExchange(pDX);
 }
 
 

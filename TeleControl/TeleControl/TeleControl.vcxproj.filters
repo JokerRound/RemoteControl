@@ -90,6 +90,9 @@
     <ClInclude Include="FileTransportManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="RecvFileDataThread.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TeleControl.cpp">
@@ -150,6 +153,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="FileTransportManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RecvFileDataThread.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

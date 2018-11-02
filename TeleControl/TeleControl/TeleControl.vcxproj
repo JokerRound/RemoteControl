@@ -199,6 +199,7 @@
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="PacketHandle.h" />
     <ClInclude Include="ProcessManagerDlg.h" />
+    <ClInclude Include="RecvFileDataThread.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ScreenShowerDlg.h" />
     <ClInclude Include="stdafx.h" />
@@ -224,6 +225,7 @@
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="PacketHandle.cpp" />
     <ClCompile Include="ProcessManagerDlg.cpp" />
+    <ClCompile Include="RecvFileDataThread.cpp" />
     <ClCompile Include="ScreenShowerDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

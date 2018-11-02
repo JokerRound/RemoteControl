@@ -18,504 +18,504 @@ static char THIS_FILE[] = __FILE__;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	CBuffer
+// FUNCTION:    CBuffer
 // 
-// DESCRIPTION:	Constructs the buffer with a default size
+// DESCRIPTION:    Constructs the buffer with a default size
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 CBuffer::CBuffer()
 {
-	// Initial size
-	m_nSize = 0;
+    // Initial size
+    m_nSize = 0;
 
-	m_pPtr = m_pBase = NULL;
+    m_pPtr = m_pBase = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	~CBuffer
+// FUNCTION:    ~CBuffer
 // 
-// DESCRIPTION:	Deallocates the buffer
+// DESCRIPTION:    Deallocates the buffer
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 CBuffer::~CBuffer()
 {
-	if (m_pBase)
-		VirtualFree(m_pBase, 0, MEM_RELEASE);
+    if (m_pBase)
+        VirtualFree(m_pBase, 0, MEM_RELEASE);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	Write
+// FUNCTION:    Write
 // 
-// DESCRIPTION:	Writes data into the buffer
+// DESCRIPTION:    Writes data into the buffer
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 BOOL CBuffer::Write(PBYTE pData, UINT nSize)
 {
-	ReAllocateBuffer(nSize + GetBufferLen());
+    ReAllocateBuffer(nSize + GetBufferLen());
 
-	CopyMemory(m_pPtr, pData, nSize);
+    CopyMemory(m_pPtr, pData, nSize);
 
-	// Advance Pointer
-	m_pPtr += nSize;
+    // Advance Pointer
+    m_pPtr += nSize;
 
-	return nSize;
+    return nSize;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	Insert
+// FUNCTION:    Insert
 // 
-// DESCRIPTION:	Insert data into the buffer 
+// DESCRIPTION:    Insert data into the buffer 
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 BOOL CBuffer::Insert(PBYTE pData, UINT nSize)
 {
-	ReAllocateBuffer(nSize + GetBufferLen());
+    ReAllocateBuffer(nSize + GetBufferLen());
 
-	MoveMemory(m_pBase + nSize, m_pBase, GetMemSize() - nSize);
-	CopyMemory(m_pBase, pData, nSize);
+    MoveMemory(m_pBase + nSize, m_pBase, GetMemSize() - nSize);
+    CopyMemory(m_pBase, pData, nSize);
 
-	// Advance Pointer
-	m_pPtr += nSize;
+    // Advance Pointer
+    m_pPtr += nSize;
 
-	return nSize;
+    return nSize;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	Read
+// FUNCTION:    Read
 // 
-// DESCRIPTION:	Reads data from the buffer and deletes what it reads
+// DESCRIPTION:    Reads data from the buffer and deletes what it reads
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 UINT CBuffer::Read(PBYTE pData, UINT nSize)
 {
-	// Trying to byte off more than ya can chew - eh?
-	if (nSize > GetMemSize())
-		return 0;
+    // Trying to byte off more than ya can chew - eh?
+    if (nSize > GetMemSize())
+        return 0;
 
-	// all that we have 
-	if (nSize > GetBufferLen())
-		nSize = GetBufferLen();
+    // all that we have 
+    if (nSize > GetBufferLen())
+        nSize = GetBufferLen();
 
 
-	if (nSize)
-	{
-		// Copy over required amount and its not up to us
-		// to terminate the buffer - got that!!!
-		CopyMemory(pData, m_pBase, nSize);
+    if (nSize)
+    {
+        // Copy over required amount and its not up to us
+        // to terminate the buffer - got that!!!
+        CopyMemory(pData, m_pBase, nSize);
 
-		// Slide the buffer back - like sinking the data
-		MoveMemory(m_pBase, m_pBase + nSize, GetMemSize() - nSize);
+        // Slide the buffer back - like sinking the data
+        MoveMemory(m_pBase, m_pBase + nSize, GetMemSize() - nSize);
 
-		m_pPtr -= nSize;
-	}
+        m_pPtr -= nSize;
+    }
 
-	DeAllocateBuffer(GetBufferLen());
+    DeAllocateBuffer(GetBufferLen());
 
-	return nSize;
+    return nSize;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	GetMemSize
+// FUNCTION:    GetMemSize
 // 
-// DESCRIPTION:	Returns the phyical memory allocated to the buffer
+// DESCRIPTION:    Returns the phyical memory allocated to the buffer
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 UINT CBuffer::GetMemSize()
 {
-	return m_nSize;
+    return m_nSize;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	GetBufferLen
+// FUNCTION:    GetBufferLen
 // 
-// DESCRIPTION:	Get the buffer 'data' length
+// DESCRIPTION:    Get the buffer 'data' length
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 UINT CBuffer::GetBufferLen()
 {
-	if (m_pBase == NULL)
-		return 0;
+    if (m_pBase == NULL)
+        return 0;
 
-	int nSize =
-		m_pPtr - m_pBase;
-	return nSize;
+    int nSize =
+        m_pPtr - m_pBase;
+    return nSize;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	ReAllocateBuffer
+// FUNCTION:    ReAllocateBuffer
 // 
-// DESCRIPTION:	ReAllocateBuffer the Buffer to the requested size
+// DESCRIPTION:    ReAllocateBuffer the Buffer to the requested size
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 UINT CBuffer::ReAllocateBuffer(UINT nRequestedSize)
 {
-	if (nRequestedSize < GetMemSize())
-		return 0;
+    if (nRequestedSize < GetMemSize())
+        return 0;
 
-	// Allocate new size
-	UINT nNewSize = (UINT)ceil(nRequestedSize / 1024.0) * 1024;
+    // Allocate new size
+    UINT nNewSize = (UINT)ceil(nRequestedSize / 1024.0) * 1024;
 
-	// New Copy Data Over
-	PBYTE pNewBuffer = (PBYTE)VirtualAlloc(NULL, nNewSize, MEM_COMMIT, PAGE_READWRITE);
+    // New Copy Data Over
+    PBYTE pNewBuffer = (PBYTE)VirtualAlloc(NULL, nNewSize, MEM_COMMIT, PAGE_READWRITE);
 
-	UINT nBufferLen = GetBufferLen();
-	CopyMemory(pNewBuffer, m_pBase, nBufferLen);
+    UINT nBufferLen = GetBufferLen();
+    CopyMemory(pNewBuffer, m_pBase, nBufferLen);
 
-	if (m_pBase)
-		VirtualFree(m_pBase, 0, MEM_RELEASE);
+    if (m_pBase)
+        VirtualFree(m_pBase, 0, MEM_RELEASE);
 
-	// Hand over the pointer
-	m_pBase = pNewBuffer;
+    // Hand over the pointer
+    m_pBase = pNewBuffer;
 
-	// Realign position pointer
-	m_pPtr = m_pBase + nBufferLen;
+    // Realign position pointer
+    m_pPtr = m_pBase + nBufferLen;
 
-	m_nSize = nNewSize;
+    m_nSize = nNewSize;
 
-	return m_nSize;
+    return m_nSize;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	DeAllocateBuffer
+// FUNCTION:    DeAllocateBuffer
 // 
-// DESCRIPTION:	DeAllocates the Buffer to the requested size
+// DESCRIPTION:    DeAllocates the Buffer to the requested size
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 UINT CBuffer::DeAllocateBuffer(UINT nRequestedSize)
 {
-	if (nRequestedSize < GetBufferLen())
-		return 0;
+    if (nRequestedSize < GetBufferLen())
+        return 0;
 
-	// Allocate new size
-	UINT nNewSize = (UINT)ceil(nRequestedSize / 1024.0) * 1024;
+    // Allocate new size
+    UINT nNewSize = (UINT)ceil(nRequestedSize / 1024.0) * 1024;
 
-	if (nNewSize < GetMemSize())
-		return 0;
+    if (nNewSize < GetMemSize())
+        return 0;
 
-	// New Copy Data Over
-	PBYTE pNewBuffer = (PBYTE)VirtualAlloc(NULL, nNewSize, MEM_COMMIT, PAGE_READWRITE);
+    // New Copy Data Over
+    PBYTE pNewBuffer = (PBYTE)VirtualAlloc(NULL, nNewSize, MEM_COMMIT, PAGE_READWRITE);
 
-	UINT nBufferLen = GetBufferLen();
-	CopyMemory(pNewBuffer, m_pBase, nBufferLen);
+    UINT nBufferLen = GetBufferLen();
+    CopyMemory(pNewBuffer, m_pBase, nBufferLen);
 
-	VirtualFree(m_pBase, 0, MEM_RELEASE);
+    VirtualFree(m_pBase, 0, MEM_RELEASE);
 
-	// Hand over the pointer
-	m_pBase = pNewBuffer;
+    // Hand over the pointer
+    m_pBase = pNewBuffer;
 
-	// Realign position pointer
-	m_pPtr = m_pBase + nBufferLen;
+    // Realign position pointer
+    m_pPtr = m_pBase + nBufferLen;
 
-	m_nSize = nNewSize;
+    m_nSize = nNewSize;
 
-	return m_nSize;
+    return m_nSize;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	Scan
+// FUNCTION:    Scan
 // 
-// DESCRIPTION:	Scans the buffer for a given byte sequence
+// DESCRIPTION:    Scans the buffer for a given byte sequence
 // 
-// RETURNS:		Logical offset
+// RETURNS:        Logical offset
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 int CBuffer::Scan(PBYTE pScan, UINT nPos)
 {
-	if (nPos > GetBufferLen())
-		return -1;
+    if (nPos > GetBufferLen())
+        return -1;
 
-	PBYTE pStr = (PBYTE)strstr((char*)(m_pBase + nPos), (char*)pScan);
+    PBYTE pStr = (PBYTE)strstr((char*)(m_pBase + nPos), (char*)pScan);
 
-	int nOffset = 0;
+    int nOffset = 0;
 
-	if (pStr)
-		nOffset = (pStr - m_pBase) + strlen((char*)pScan);
+    if (pStr)
+        nOffset = (pStr - m_pBase) + strlen((char*)pScan);
 
-	return nOffset;
+    return nOffset;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	ClearBuffer
+// FUNCTION:    ClearBuffer
 // 
-// DESCRIPTION:	Clears/Resets the buffer
+// DESCRIPTION:    Clears/Resets the buffer
 // 
-// RETURNS:	
+// RETURNS:    
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 void CBuffer::ClearBuffer()
 {
-	// Force the buffer to be empty
-	m_pPtr = m_pBase;
+    // Force the buffer to be empty
+    m_pPtr = m_pBase;
 
-	DeAllocateBuffer(1024);
+    DeAllocateBuffer(1024);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	Write
+// FUNCTION:    Write
 // 
-// DESCRIPTION:	Writes a string a the end of the buffer
+// DESCRIPTION:    Writes a string a the end of the buffer
 // 
-// RETURNS:	
+// RETURNS:    
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 BOOL CBuffer::Write(CString& strData)
 {
-	int nSize = strData.GetLength();
-	return Write((PBYTE)strData.GetBuffer(nSize), nSize);
+    int nSize = strData.GetLength();
+    return Write((PBYTE)strData.GetBuffer(nSize), nSize);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	Insert
+// FUNCTION:    Insert
 // 
-// DESCRIPTION:	Insert a string at the beginning of the buffer
+// DESCRIPTION:    Insert a string at the beginning of the buffer
 // 
-// RETURNS:	
+// RETURNS:    
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 BOOL CBuffer::Insert(CString& strData)
 {
-	int nSize = strData.GetLength();
-	return Insert((PBYTE)strData.GetBuffer(nSize), nSize);
+    int nSize = strData.GetLength();
+    return Insert((PBYTE)strData.GetBuffer(nSize), nSize);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	Copy
+// FUNCTION:    Copy
 // 
-// DESCRIPTION:	Copy from one buffer object to another...
+// DESCRIPTION:    Copy from one buffer object to another...
 // 
-// RETURNS:	
+// RETURNS:    
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 void CBuffer::Copy(CBuffer& buffer)
 {
-	int nReSize = buffer.GetMemSize();
-	int nSize = buffer.GetBufferLen();
-	ClearBuffer();
-	ReAllocateBuffer(nReSize);
+    int nReSize = buffer.GetMemSize();
+    int nSize = buffer.GetBufferLen();
+    ClearBuffer();
+    ReAllocateBuffer(nReSize);
 
-	m_pPtr = m_pBase + nSize;
+    m_pPtr = m_pBase + nSize;
 
-	CopyMemory(m_pBase, buffer.GetBuffer(), buffer.GetBufferLen());
+    CopyMemory(m_pBase, buffer.GetBuffer(), buffer.GetBufferLen());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	GetBuffer
+// FUNCTION:    GetBuffer
 // 
-// DESCRIPTION:	Returns a pointer to the physical memory determined by the offset
+// DESCRIPTION:    Returns a pointer to the physical memory determined by the offset
 // 
-// RETURNS:	
+// RETURNS:    
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 PBYTE CBuffer::GetBuffer(UINT nPos)
 {
-	return m_pBase + nPos;
+    return m_pBase + nPos;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	GetBuffer
+// FUNCTION:    GetBuffer
 // 
-// DESCRIPTION:	Returns a pointer to the physical memory determined by the offset
+// DESCRIPTION:    Returns a pointer to the physical memory determined by the offset
 // 
-// RETURNS:	
+// RETURNS:    
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ///////////////////////////////////////////////////////////////////////////////
 void CBuffer::FileWrite(const CString& strFileName)
 {
-	CFile file;
+    CFile file;
 
-	if (file.Open(strFileName, CFile::modeWrite | CFile::modeCreate))
-	{
-		file.Write(m_pBase, GetBufferLen());
-		file.Close();
-	}
+    if (file.Open(strFileName, CFile::modeWrite | CFile::modeCreate))
+    {
+        file.Write(m_pBase, GetBufferLen());
+        file.Close();
+    }
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // 
-// FUNCTION:	Delete
+// FUNCTION:    Delete
 // 
-// DESCRIPTION:	Delete data from the buffer and deletes what it reads
+// DESCRIPTION:    Delete data from the buffer and deletes what it reads
 // 
-// RETURNS:		
+// RETURNS:        
 // 
-// NOTES:	
+// NOTES:    
 // 
 // MODIFICATIONS:
 // 
-// Name				Date		Version		Comments
-// N T ALMOND       270400		1.0			Origin
+// Name                Date        Version        Comments
+// N T ALMOND       270400        1.0            Origin
 // 
 ////////////////////////////////////////////////////////////////////////////////
 UINT CBuffer::Delete(UINT nSize)
 {
-	// Trying to byte off more than ya can chew - eh?
-	if (nSize > GetMemSize())
-		return 0;
+    // Trying to byte off more than ya can chew - eh?
+    if (nSize > GetMemSize())
+        return 0;
 
-	// all that we have 
-	if (nSize > GetBufferLen())
-		nSize = GetBufferLen();
+    // all that we have 
+    if (nSize > GetBufferLen())
+        nSize = GetBufferLen();
 
 
-	if (nSize)
-	{
-		// Slide the buffer back - like sinking the data
-		MoveMemory(m_pBase, m_pBase + nSize, GetMemSize() - nSize);
+    if (nSize)
+    {
+        // Slide the buffer back - like sinking the data
+        MoveMemory(m_pBase, m_pBase + nSize, GetMemSize() - nSize);
 
-		m_pPtr -= nSize;
-	}
+        m_pPtr -= nSize;
+    }
 
-	DeAllocateBuffer(GetBufferLen());
+    DeAllocateBuffer(GetBufferLen());
 
-	return nSize;
+    return nSize;
 }

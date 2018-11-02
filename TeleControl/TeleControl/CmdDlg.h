@@ -8,7 +8,7 @@
 
 class CCmdDlg : public CDialogEx
 {
-	DECLARE_DYNAMIC(CCmdDlg)
+    DECLARE_DYNAMIC(CCmdDlg)
 private:
     CString &m_ref_csIPAndPort;
     PCLIENTINFO m_pstClientInfo;
@@ -19,21 +19,21 @@ private:
 
 
 public:
-	CCmdDlg(CString &ref_csIPAndPort,
+    CCmdDlg(CString &ref_csIPAndPort,
             PCLIENTINFO pClientInfo,
             CCommunicationIOCP &ref_IOCP,
             CWnd* pParent = NULL);   // 标准构造函数
-	virtual ~CCmdDlg();
+    virtual ~CCmdDlg();
 
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_CMD };
+    enum { IDD = IDD_CMD };
 #endif
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
-	DECLARE_MESSAGE_MAP()
+    DECLARE_MESSAGE_MAP()
 public:
     // Screen Buffer.
     CString m_csScreen;

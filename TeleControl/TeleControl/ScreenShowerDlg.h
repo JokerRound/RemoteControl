@@ -8,7 +8,7 @@
 
 class CScreenShowerDlg : public CDialogEx
 {
-	DECLARE_DYNAMIC(CScreenShowerDlg)
+    DECLARE_DYNAMIC(CScreenShowerDlg)
 protected:
     // IOCP
     CCommunicationIOCP &m_ref_IOCP;
@@ -17,21 +17,21 @@ protected:
     // Client上下文
     PCLIENTINFO m_pstClientInfo = NULL;
 public:
-	CScreenShowerDlg(CString &ref_csIPAndPort,
+    CScreenShowerDlg(CString &ref_csIPAndPort,
                      PCLIENTINFO pClientInfo,
                      CCommunicationIOCP &ref_IOCP, 
                      CWnd* pParent = NULL);   // 标准构造函数
-	virtual ~CScreenShowerDlg();
+    virtual ~CScreenShowerDlg();
 
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_SCREENSHOWER };
+    enum { IDD = IDD_SCREENSHOWER };
 #endif
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
-	DECLARE_MESSAGE_MAP()
+    DECLARE_MESSAGE_MAP()
 public:
     virtual BOOL OnInitDialog();
 };

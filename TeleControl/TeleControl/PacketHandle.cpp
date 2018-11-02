@@ -12,26 +12,29 @@ BOOL OnHeartBeat(SOCKET sctTargetSocket,
                  PCLIENTINFO pstClientInfo,
                  CCommunicationIOCP &IOCP)
 {
-    PPACKETFORMAT pstPacket = (PPACKETFORMAT)pstClientInfo->szSendTmpBuffer_;
+    //PPACKETFORMAT pstPacket = (PPACKETFORMAT)pstClientInfo->szSendTmpBuffer_;
 
-    // *注意* 写入数据时要加锁
-    pstClientInfo->CriticalSection_.Lock();
-    pstPacket->ePacketType_ = PT_HEATBEAT;
-    pstPacket->dwSize_ = 0;
+    //// *注意* 写入数据时要加锁
+    //pstClientInfo->CriticalSection_.Lock();
+    //pstPacket->ePacketType_ = PT_HEARTBEAT;
+    //pstPacket->dwSize_ = 0;
 
-    pstClientInfo->SendBuffer_.Write((PBYTE)pstClientInfo->szSendTmpBuffer_,
-                                     PACKET_HEADER_SIZE + pstPacket->dwSize_);
-    // 清空临时发送区
-    memset(pstClientInfo->szSendTmpBuffer_,
-           0,
-           PACKET_HEADER_SIZE + pstPacket->dwSize_);
+    //pstClientInfo->SendBuffer_.Write((PBYTE)pstClientInfo->szSendTmpBuffer_,
+    //                                 PACKET_HEADER_SIZE + pstPacket->dwSize_);
+    //// 清空临时发送区
+    //memset(pstClientInfo->szSendTmpBuffer_,
+    //       0,
+    //       PACKET_HEADER_SIZE + pstPacket->dwSize_);
 
-    // 投递发送请求
-    BOOL bRet = IOCP.PostSendRequst(sctTargetSocket,
-                                    pstClientInfo->SendBuffer_);
+    //// 投递发送请求
+    //BOOL bRet = IOCP.PostSendRequst(sctTargetSocket,
+    //                                pstClientInfo->SendBuffer_);
 
-    pstClientInfo->SendBuffer_.ClearBuffer();
-    pstClientInfo->CriticalSection_.Unlock();
+    //pstClientInfo->SendBuffer_.ClearBuffer();
+    //pstClientInfo->CriticalSection_.Unlock();
+
+    CString csTmpData;
+    BOOL bRet = SendDataUseIOCP(pstClientInfo, IOCP, csTmpData, PT_HEARTBEAT);
 
     return bRet;
 } 
@@ -74,10 +77,10 @@ BOOL OnFileDevice(SOCKET sctTargetSocket,
     pstClientInfo->pFileTransferDlg_->
         m_csTargetHostDevice.ReleaseBuffer();
 
-    // 清空接收临时缓冲区
+    // Clear temp buffer receive.
     memset(szBuffer, 0, uiLen);
 
-    // 触发成功获取盘符事件
+    // Signal the evet get driver successfully.
     SetEvent(pstClientInfo->pFileTransferDlg_->m_hGetTargetDeviceEvent);
     
     return TRUE;
@@ -85,17 +88,28 @@ BOOL OnFileDevice(SOCKET sctTargetSocket,
 
 BOOL OnFileData(SOCKET sctTargetSocket,
                 char *szBuffer,
-                size_t uiLen,
+                PACKETFORMAT &ref_stHeader,
                 PCLIENTINFO pstClientInfo,
                 CCommunicationIOCP &IOCP)
 {
     CString csFileData;
-    szBuffer[uiLen] = _T('\0');
-    csFileData = szBuffer;
-    memset(szBuffer, 0, uiLen);
+    FILEDATAINQUEUE stFileData = { 0 };
 
-    BOOL bRet = TRUE;
-    //BOOL bRet = pstClientInfo->pFileTransferDlg_->SendMessage();
+    // Get file name and postion.
+    stFileData.csFileFullName_ = ref_stHeader.szFileFullName_;
+    stFileData.ullFilePointPos_ = ref_stHeader.ullFilePointPos_;
+
+    // Wirte file data to buffer object.
+    stFileData.FileDataBuffer_.Write((PBYTE)szBuffer, ref_stHeader.dwSize_);
+
+    // Clear temp buffer receive.
+    memset(szBuffer, 0, ref_stHeader.dwSize_);
+
+    // Put file data into queue that FileTransfer do it.
+    BOOL bRet = FALSE;
+    bRet = pstClientInfo->pFileTransferDlg_->SendMessage(WM_HASFILEDATA, 
+                                                         (WPARAM)&stFileData, 
+                                                         0);
 
     return bRet;
 } //! OnFileData END
@@ -109,6 +123,7 @@ BOOL OnCMDReply(SOCKET sctTargetSocket,
     CString csCmdReply;
     szBuffer[uiLen] = _T('\0');
     csCmdReply = szBuffer;
+
     memset(szBuffer, 0, uiLen);
 
     BOOL bRet = 
@@ -193,7 +208,7 @@ BOOL OnScreenPicture(SOCKET sctTargetSocket,
 BOOL OnHandlePacket(PACKETTYPE ePacketType,
                     SOCKET sctTargetSocket,
                     char *szBuffer,
-                    size_t uiLen,
+                    PACKETFORMAT &ref_stHeader,
                     PCLIENTINFO pstClientInfo,
                     CCommunicationIOCP &IOCP)
 {
@@ -202,7 +217,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
     // Packet Identification.
     switch (ePacketType)
     {
-        case PT_HEATBEAT:
+        case PT_HEARTBEAT:
         {
             OutputDebugString(_T("收到心跳包\r\n"));
             // Deel with heartbeat.
@@ -216,13 +231,13 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
 
             break;
         }
-        // 目标主机文件列表数据
+        // The data of target host's list.
         case PT_FILE_LIST:
         {
             OutputDebugString(_T("收到文件列表信息\r\n"));
             bRet = OnFileList(sctTargetSocket,
                               szBuffer,
-                              uiLen,
+                              ref_stHeader.dwSize_,
                               pstClientInfo,
                               IOCP);
             if (!bRet)
@@ -231,7 +246,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
             }
             break;
         }
-        // 目标主机盘符信息
+        // The device of target host.
         case PT_FILE_DEVICE:
         {
 #ifdef DEBUG
@@ -239,7 +254,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
 #endif // DEBUG
             bRet = OnFileDevice(sctTargetSocket,
                                 szBuffer,
-                                uiLen,
+                                ref_stHeader.dwSize_,
                                 pstClientInfo,
                                 IOCP);
             if (!bRet)
@@ -250,7 +265,21 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
         }
         case PT_FILE_DATA:
         {
-
+            bRet = OnFileData(sctTargetSocket,
+                              szBuffer,
+                              ref_stHeader,
+                              pstClientInfo,
+                              IOCP);
+            if (!bRet)
+            {
+#ifdef DEBUG
+                OutputDebugStringWithInfo(_T("Recive the GETFILE data "
+                                             "from target host"),
+                                          __FILET__,
+                                          __LINE__);
+#endif // DEBUG
+            }
+            break;
         }
         case PT_PROCESS_INFO:
         {
@@ -259,7 +288,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
 #endif // DEBUG
             bRet = OnProcessInfo(sctTargetSocket,
                                  szBuffer,
-                                 uiLen,
+                                 ref_stHeader.dwSize_,
                                  pstClientInfo);
             if (!bRet)
             {
@@ -278,7 +307,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
         {
             bRet = OnScreenPicture(sctTargetSocket,
                                    szBuffer,
-                                   uiLen,
+                                   ref_stHeader.dwSize_,
                                    pstClientInfo);
             break;
         }
@@ -289,7 +318,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
 #endif // DEBUG
             bRet = OnCMDReply(sctTargetSocket,
                               szBuffer,
-                              uiLen,
+                              ref_stHeader.dwSize_,
                               pstClientInfo);
             if (!bRet)
             {
@@ -307,4 +336,4 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
     } //! switch "Packet Identification" END
 
     return bRet;
-}
+} //! OnHandlePacket END

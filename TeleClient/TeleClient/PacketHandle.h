@@ -5,7 +5,7 @@
 BOOL OnHandlePacket(PACKETTYPE ePacketType,
                     SOCKET sctTargetSocket,
                     char *szBuffer,
-                    size_t uiLen,
+                    PACKETFORMAT &ref_stHeader,
                     PCLIENTINFO  pstClientInfo,
                     CCommunicationIOCP &IOCP);
 

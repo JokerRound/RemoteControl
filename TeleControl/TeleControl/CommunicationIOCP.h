@@ -45,5 +45,10 @@ public:
 
 };
 
+BOOL SendDataUseIOCP(_In_ CLIENTINFO *&ref_pstClientInfo,
+                     _In_ CCommunicationIOCP &ref_IOCP,
+                     _In_ CString &ref_csData,
+                     _In_ PACKETTYPE ePacketType);
+
 
 #endif // !COMMUNICATIONIOCP_H_

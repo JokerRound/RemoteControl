@@ -14,10 +14,18 @@ public:
     CFileTransportManager();
     virtual ~CFileTransportManager();
 
-    void InsertGetFileTask(_In_ const CString csFileName,
+    void InsertGetFileTask(_In_ const CString csFileFullName,
                            _In_ PFILETRANSPORTTASK pstTaskInfo);
 
+    void UpdateFileNewName(_In_ const CString csFileFullName,
+                           _In_ const CString csFileNewName);
+
+    void UpdateKey(_In_ const CString csOrginalKey,
+                   _In_ const CString csNewKey);
+
     PFILETRANSPORTTASK GetTask(_In_ const CString csFileName);
+
+    void GetAllValue(std::vector<PFILETRANSPORTTASK> &ref_vctAllValue);
 
     void CheckTask();
 

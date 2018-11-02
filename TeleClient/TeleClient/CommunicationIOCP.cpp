@@ -187,7 +187,7 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
                     OnHandlePacket(stTmpHeader.ePacketType_,
                                    pstClientInfo->sctClientSocket_,
                                    pstClientInfo->szRecvTmpBuffer_,
-                                   stTmpHeader.dwSize_,
+                                   stTmpHeader,
                                    pstClientInfo,
                                    *pIOCP);
                     pstClientInfo->CriticalSection_.Unlock();
@@ -338,3 +338,93 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
 
     return FALSE;
 } //! CCommunicationIOCP::PostRecvRequst END
+
+BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
+                     CCommunicationIOCP &ref_IOCP,
+                     CString &ref_csData,
+                     PACKETTYPE ePacketType)
+{
+    PPACKETFORMAT pstPacket = 
+        (PPACKETFORMAT)ref_pstClientInfo->szSendTmpBuffer_;
+
+    //***********************************************
+    //* ALARM * It should complete thread synchronize
+    //***********************************************
+    ref_pstClientInfo->CriticalSection_.Lock();
+    pstPacket->ePacketType_ = ePacketType;
+    pstPacket->dwSize_ =
+        (ref_csData.GetLength() + 1) * sizeof(TCHAR);
+
+    // Copy
+    memmove(pstPacket->szContent_,
+            ref_csData.GetBuffer(),
+            pstPacket->dwSize_);
+
+    // Write data of need to send.
+    ref_pstClientInfo->SendBuffer_.Write(
+        (PBYTE)ref_pstClientInfo->szSendTmpBuffer_,
+        PACKET_HEADER_SIZE + pstPacket->dwSize_);
+
+    // Make SendTmpBuffer be zero.
+    memset(ref_pstClientInfo->szSendTmpBuffer_,
+           0,
+           PACKET_HEADER_SIZE + pstPacket->dwSize_);
+
+    // Post the send requst to iocp.
+    BOOL bRet =
+        ref_IOCP.PostSendRequst(ref_pstClientInfo->sctClientSocket_,
+                                ref_pstClientInfo->SendBuffer_);
+
+    ref_pstClientInfo->SendBuffer_.ClearBuffer();
+    ref_pstClientInfo->CriticalSection_.Unlock();
+
+    return bRet;
+} //! SendDataUseIOCP END
+
+BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
+                     CCommunicationIOCP &ref_IOCP,
+                     CString &ref_csData,
+                     const DWORD &ref_dwSize,
+                     CString &ref_csFileFullName,
+                     const ULONGLONG ullFilePointPos)
+{
+    PPACKETFORMAT pstPacket = 
+        (PPACKETFORMAT)ref_pstClientInfo->szSendTmpBuffer_;
+
+    //***********************************************
+    //* ALARM * It should complete thread synchronize
+    //***********************************************
+    ref_pstClientInfo->CriticalSection_.Lock();
+    pstPacket->ePacketType_ = PT_FILE_DATA;
+    pstPacket->dwSize_ = ref_dwSize;
+    // Copy file name.
+    memmove(pstPacket->szFileFullName_,
+            ref_csFileFullName.GetBuffer(),
+            MAX_PATH); 
+    pstPacket->ullFilePointPos_ = ullFilePointPos;
+
+    // Copy
+    memmove(pstPacket->szContent_,
+            ref_csData.GetBuffer(),
+            pstPacket->dwSize_);
+
+    // Write data of need to send.
+    ref_pstClientInfo->SendBuffer_.Write(
+        (PBYTE)ref_pstClientInfo->szSendTmpBuffer_,
+        PACKET_HEADER_SIZE + pstPacket->dwSize_);
+
+    // Make SendTmpBuffer be zero.
+    memset(ref_pstClientInfo->szSendTmpBuffer_,
+           0,
+           PACKET_HEADER_SIZE + pstPacket->dwSize_);
+
+    // Post the send requst to iocp.
+    BOOL bRet =
+        ref_IOCP.PostSendRequst(ref_pstClientInfo->sctClientSocket_,
+                                ref_pstClientInfo->SendBuffer_);
+
+    ref_pstClientInfo->SendBuffer_.ClearBuffer();
+    ref_pstClientInfo->CriticalSection_.Unlock();
+
+    return bRet;
+} //! SendDataUseIOCP END

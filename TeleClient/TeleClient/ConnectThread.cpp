@@ -16,22 +16,22 @@ CConnectThread::~CConnectThread()
 
 bool CConnectThread::OnThreadEventRun(LPVOID lpParam)
 {
-    // 解析参数
+    // Analysis parament.
     PCONNECTTHREADPARAM pConnectThreadParam = (PCONNECTTHREADPARAM)lpParam;
-    // 获取IOCP类对象
+    // Get IOCP object.
     CCommunicationIOCP *pIOCP = pConnectThreadParam->pIOCP_;
-    // 获取服务器地址信息
+    // Get server address info.
     sockaddr_in stServerAddrInfo = pConnectThreadParam->stServerAddrInfo_;
-    // 获取中断事件句柄
+    // Get break event handle.
     HANDLE *phBreakEvent = pConnectThreadParam->phBreakEvent_;
-    // 获取客户端窗口的指针
+    // Get window point of client.
     CTeleClientDlg *pTeleClientDlg = pConnectThreadParam->pTeleClientDlg_;
 
     int iRet = 0;
     SOCKET sctConnectSocket = INVALID_SOCKET;
     BOOL bHasError = FALSE;
 
-    // 循环尝试连接
+    // Connect loop.
     while (TRUE)
     {
         do
@@ -47,7 +47,7 @@ bool CConnectThread::OnThreadEventRun(LPVOID lpParam)
                 break;
             }
 
-            // 对话框更新新的Sokcet
+            // Dialog update new socket.
             pTeleClientDlg->SetConnectSocket(sctConnectSocket);
 
             iRet = connect(sctConnectSocket,
@@ -72,7 +72,7 @@ bool CConnectThread::OnThreadEventRun(LPVOID lpParam)
 
             // 窗口类保存Socket上下文信息
             pTeleClientDlg->m_pstClientInfo = pstClientInfo;
-            // 绑定socket和IOCP
+            // Bind socket with IOCP.
             BOOL bRet = pIOCP->Associate((HANDLE)sctConnectSocket,
                 (ULONG_PTR)pstClientInfo);
             if (!bRet)
@@ -108,20 +108,20 @@ bool CConnectThread::OnThreadEventRun(LPVOID lpParam)
             }
         } while (FALSE);
 
-        // 清理
+        // Clean.
         shutdown(sctConnectSocket, SD_SEND);
         closesocket(sctConnectSocket);
 
-        // 关闭定时器
+        // Close Timer.
         pTeleClientDlg->KillTimer(TIMER_HEATBEAT);
 
-        // 释放Socket上下文信息
+        // Free context info of client.
         if (pTeleClientDlg->m_pstClientInfo != NULL)
         {
             delete pTeleClientDlg->m_pstClientInfo;
             pTeleClientDlg->m_pstClientInfo = NULL;
         }
-    } //! while 循环尝试连接 END
+    } //! while "Loop connect" END
 
     return true;
 } //! CConnectThread::OnThreadEventRun END

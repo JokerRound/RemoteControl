@@ -257,7 +257,9 @@ BOOL OnGetFileCommand(SOCKET sctTargetSocket,
     memset(szBuffer, 0, uiLen);
 
     BOOL bRet = pstClientInfo->pTeleClientDlg_->
-        SendMessage(WM_GETFILE, (WPARAM)&csFileListToGet);
+        SendMessage(WM_GETFILE, 
+                    (WPARAM)&csFileListToGet,
+                    (LPARAM)pstClientInfo);
 
     return bRet;
 
@@ -309,7 +311,6 @@ BOOL OnCmdCommandStart(PCLIENTINFO  pstClientInfo)
                              NULL,
                              &stSi,
                              &stPi);
-
         if (!bRet)
         {
 #ifdef DEBUG
@@ -317,6 +318,9 @@ BOOL OnCmdCommandStart(PCLIENTINFO  pstClientInfo)
 #endif // DEBUG
             break;
         }
+
+        CloseHandle(stPi.hThread);
+        CloseHandle(stPi.hProcess);
 
         // 发消息给主窗口去创建线程
         if (pstClientInfo->pTeleClientDlg_ != NULL)
@@ -333,18 +337,33 @@ BOOL OnCmdCommandStart(PCLIENTINFO  pstClientInfo)
             }
         }
 
-        // 成功
+        // Successfully end.
         return TRUE;
     } while (FALSE);
 
-    // 异常处理
+    // Deal with error and close those pipe.
     if (pstClientInfo->hServerCmdReadPipe_ != INVALID_HANDLE_VALUE)
     {
         CloseHandle(pstClientInfo->hServerCmdReadPipe_);
         pstClientInfo->hServerCmdReadPipe_ = INVALID_HANDLE_VALUE;
     }
+    if (pstClientInfo->hServerCmdWritePipe_ != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(pstClientInfo->hServerCmdWritePipe_);
+        pstClientInfo->hServerCmdWritePipe_ = INVALID_HANDLE_VALUE;
+    }
+    if (pstClientInfo->hCmdReadPipe_ != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(pstClientInfo->hCmdReadPipe_);
+        pstClientInfo->hCmdReadPipe_ = INVALID_HANDLE_VALUE;
+    }
+    if (pstClientInfo->hCmdWritePipe_ != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(pstClientInfo->hCmdWritePipe_);
+        pstClientInfo->hCmdWritePipe_ = INVALID_HANDLE_VALUE;
+    }
     
-    // 失败
+    // Failure end.
     return FALSE;
 }
 
@@ -490,7 +509,7 @@ BOOL OnProcessCommandKill(SOCKET sctTargetSocket,
 BOOL OnHandlePacket(PACKETTYPE ePacketType,
                     SOCKET sctTargetSocket,
                     char *szBuffer,
-                    size_t uiLen,
+                    PACKETFORMAT &ref_stHeader,
                     PCLIENTINFO  pstClientInfo,
                     CCommunicationIOCP &IOCP)
 {
@@ -498,11 +517,11 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
     
     switch (ePacketType)
     {
-        case PT_HEATBEAT:
+        case PT_HEARTBEAT:
         {
             OutputDebugString(_T("收到服务器心跳回复包\r\n"));
             // 清空
-            memset(szBuffer, 0, uiLen);
+            memset(szBuffer, 0, ref_stHeader.dwSize_);
             break;
         }
         case PT_FILE_LIST:
@@ -510,7 +529,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
             OutputDebugString(_T("收到文件列表请求\r\n"));
             bRet = OnFileList(sctTargetSocket,
                               szBuffer,
-                              uiLen,
+                              ref_stHeader.dwSize_,
                               pstClientInfo,
                               IOCP);
             if (!bRet)
@@ -525,7 +544,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
             OutputDebugString(_T("收到盘符请求\r\n"));
             bRet = OnFileDevice(sctTargetSocket,
                                 szBuffer,
-                                uiLen,
+                                ref_stHeader.dwSize_,
                                 pstClientInfo,
                                 IOCP);
             if (!bRet)
@@ -539,7 +558,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
         {
             bRet = OnGetFileCommand(sctTargetSocket,
                                     szBuffer,
-                                    uiLen,
+                                    ref_stHeader.dwSize_,
                                     pstClientInfo,
                                     IOCP);
             break;
@@ -548,7 +567,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
         {
             bRet = OnScreenPictrue(sctTargetSocket,
                                    szBuffer,
-                                   uiLen,
+                                   ref_stHeader.dwSize_,
                                    pstClientInfo,
                                    IOCP);
             if (!bRet)
@@ -561,7 +580,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
         {
             bRet = OnProcessInfo(sctTargetSocket,
                                  szBuffer,
-                                 uiLen,
+                                 ref_stHeader.dwSize_,
                                  pstClientInfo,
                                  IOCP);
             if (!bRet)
@@ -577,7 +596,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
 #endif // DEBUG
             bRet = OnProcessCommandKill(sctTargetSocket,
                                         szBuffer,
-                                        uiLen,
+                                        ref_stHeader.dwSize_,
                                         pstClientInfo,
                                         IOCP);
             if (!bRet)
@@ -587,7 +606,25 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
         }
         case PT_CMDCOMMAND_END:
         {
-            // 关闭CMD进程句柄
+#ifdef DEBUG
+            OutputDebugStringWithInfo(_T("Get cmd command end."),
+                                      __FILET__,
+                                      __LINE__);
+#endif // DEBUG
+            TCHAR *szEndOrder = _T("exit\r\n");
+            bRet = OnCMDOrder(sctTargetSocket,
+                              (char *)szEndOrder,
+                              ref_stHeader.dwSize_,
+                              pstClientInfo,
+                              IOCP);
+            if (!bRet)
+            {
+#ifdef DEBUG
+            OutputDebugStringWithInfo(_T("Deal with cmd command end failed."),
+                                      __FILET__,
+                                      __LINE__);
+#endif // DEBUG
+            }
 
             break;
         }
@@ -606,7 +643,7 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
             OutputDebugString(_T("收到CMD指令\r\n"));
             bRet = OnCMDOrder(sctTargetSocket,
                               szBuffer,
-                              uiLen,
+                              ref_stHeader.dwSize_,
                               pstClientInfo,
                               IOCP);
             if (!bRet)

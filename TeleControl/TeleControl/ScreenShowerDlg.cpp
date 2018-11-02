@@ -15,7 +15,7 @@ CScreenShowerDlg::CScreenShowerDlg(CString &ref_csIPAndPort,
                                    PCLIENTINFO pstClientInfo,
                                    CCommunicationIOCP &ref_IOCP,
                                    CWnd* pParent /*=NULL*/)
-	: CDialogEx(IDD_SCREENSHOWER, pParent)
+    : CDialogEx(IDD_SCREENSHOWER, pParent)
     , m_ref_IOCP(ref_IOCP)
     , m_ref_csIPAndPort(ref_csIPAndPort)
 {
@@ -28,7 +28,7 @@ CScreenShowerDlg::~CScreenShowerDlg()
 
 void CScreenShowerDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogEx::DoDataExchange(pDX);
+    CDialogEx::DoDataExchange(pDX);
 }
 
 

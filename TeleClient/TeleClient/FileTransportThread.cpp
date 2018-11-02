@@ -2,6 +2,7 @@
 #include "StructShare.h"
 #include "FileTransportThread.h"
 #include "TeleClientDlg.h"
+#include "CommunicationIOCP.h"
 
 
 CFileTransportThread::CFileTransportThread()
@@ -15,15 +16,22 @@ CFileTransportThread::~CFileTransportThread()
 
 bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
 {
+#ifdef DEBUG
+    DWORD dwError = -1;
+    CString csErrorMessage;
+#endif // DEBUG
+
+    // Analysis parament.
     PFILETRANSPORTTHREADPARAM pFileTransportThreadParam =
         (PFILETRANSPORTTHREADPARAM)lpParam;
     CTeleClientDlg *pTeleClientDlg = 
         pFileTransportThreadParam->pTeleClientDlg_;
-    CString csFileListToGet = 
-        *(pFileTransportThreadParam->pcsFileListToGet_);
+    CString csFileListToGet = *(pFileTransportThreadParam->pcsFileListToGet_);
+    CCommunicationIOCP *pIOCP = pFileTransportThreadParam->pIOCP_;
+    PCLIENTINFO pstClientInfo = pFileTransportThreadParam->pstClientInfo_;
     
     // Thread had initilazed, signal event. 
-    pTeleClientDlg->m_GetFileThreadInitializeEvent.SetEvent();
+    pTeleClientDlg->m_pevtGetFileThreadInitializeEvent->SetEvent();
 
     // Get path.
     std::basic_string<TCHAR> strFilePath;
@@ -38,6 +46,8 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
     std::basic_regex<TCHAR> Rgx(_T("(.*)?:(.*)?\\|"));
 
     bool bRet = false;
+
+    // Get filename and transport data.
     while (!strFileList.empty())
     {
         bRet = std::regex_search<TCHAR>(strFileList.c_str(),
@@ -46,21 +56,79 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
         if (!bRet)
         {
 #ifdef DEBUG
-
+            dwError = GetLastError();
+            GetErrorMessage(dwError, csErrorMessage);
+            OutputDebugStringWithInfo(csErrorMessage, __FILET__, __LINE__);
 #endif // DEBUG
             break;
         }
 
-        std::basic_string<TCHAR> strFileNameWithPath = 
-            strFilePath + (std::basic_string<TCHAR>)sMatchResult[1];
-        int iFileTransportStartPos = 
+        std::basic_string<TCHAR> strFileName = sMatchResult[1];
+        std::basic_string<TCHAR> strFileNameWithPath =
+            strFilePath + _T("\\") + strFileName;
+        ULONGLONG ullFileTransportStartPos = 
             _ttoi(((std::basic_string<TCHAR>)sMatchResult[2]).c_str());
 
+        CFile fTargetFile;
+        // Begin file operation.
+        do
+        {
+            // Open file with read mode.
+            bRet = fTargetFile.Open(strFileNameWithPath.c_str(),
+                                    CFile::modeRead);
+            if (!bRet)
+            {
+#ifdef DEBUG
+                dwError = GetLastError();
+                GetErrorMessage(dwError, csErrorMessage);
+                OutputDebugStringWithInfo(csErrorMessage, __FILET__, __LINE__);
+#endif // DEBUG
+                break;
+            }
 
+            // Move file point to start postion.
+            fTargetFile.Seek(ullFileTransportStartPos, CFile::begin);
+
+            // The formate is "FileFullName:FilePointPos|FileData"
+
+            CString csDataBlock;
+            // Read data and transport to Server.
+            do
+            {
+                csDataBlock.Empty();
+
+                DWORD dwSize = fTargetFile.Read(
+                    csDataBlock.GetBufferSetLength(FILE_TRANSPORT_MAXSIZE),
+                    FILE_TRANSPORT_MAXSIZE - 1);
+                csDataBlock.ReleaseBuffer();
+
+                CString csFileNameWithPath = strFileNameWithPath.c_str();
+
+                bRet = SendDataUseIOCP(pstClientInfo,
+                                       *pIOCP,
+                                       csDataBlock,
+                                       dwSize,
+                                       csFileNameWithPath,
+                                       fTargetFile.GetPosition());
+                if (!bRet)
+                {
+#ifdef DEBUG
+                    OutputDebugStringWithInfo(_T("File data sends failed.\r\n"),
+                                              __FILET__,
+                                              __LINE__);
+#endif // DEBUG
+                    break;
+                }
+
+
+            } while (!csDataBlock.IsEmpty()); // while "Read data" END
+
+            fTargetFile.Close();
+        } while (FALSE); // while "Begin file operation" END
 
         // Get remainder text.
         strFileList = sMatchResult.suffix();
-    }
+    } //! while "Get filename and transport data" END
 
     return bRet;
 } //! CFileTransportThread::OnThreadEventRun END

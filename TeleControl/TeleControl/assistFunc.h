@@ -13,9 +13,6 @@ void OutputDebugStringWithInfo(_In_ const CString csOuput,
 void GetErrorMessage(_In_ DWORD dwError,
                      _In_ CString &ref_csMessage);
 
-BOOL SendDataUseIOCP(_In_ CLIENTINFO *&ref_pstClientInfo,
-                     _In_ CCommunicationIOCP &ref_IOCP,
-                     _In_ CString &ref_csData,
-                     _In_ PACKETTYPE ePacketType);
+
 
 #endif // !ASSISTFUNC_H_

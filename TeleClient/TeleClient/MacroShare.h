@@ -8,11 +8,14 @@
 // Connect重连等待时间(毫秒)
 #define CONNECT_WAIT_TIME 10000
 
-// The max size of packet is 10M
-#define PACKET_CONTENT_MAXSIZE (1024 * 1024 * 10)
-
 // 数据包包头大小
 #define PACKET_HEADER_SIZE (sizeof(PACKETFORMAT) - 1)
+
+// The max size of packet's content.
+#define PACKET_CONTENT_MAXSIZE (1024 * 1024 * 2)
+
+// The max size fo transport file data.
+#define FILE_TRANSPORT_MAXSIZE (1024 * 1024)
 
 // 心跳定时器ID
 #define TIMER_HEATBEAT 1

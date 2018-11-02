@@ -30,8 +30,8 @@ namespace std
 // Type of packet
 typedef enum tagPacketType
 {
-    PT_TESE,
-    PT_HEATBEAT,
+    PT_TEST,
+    PT_HEARTBEAT,
     PT_SCREENPICTURE,
     PT_PROCESS_INFO,
     PT_PROCESSCOMMAND_KILL,
@@ -92,24 +92,24 @@ typedef enum tagProcessListColumnTYPE
     PLCT_IMAGEPATH,
 } PROCESSLISTCOLUMNTYPE;
 
-// IOCP包类型
 typedef enum tagIOCPType
 {
     IOCP_RECV,
     IOCP_SEND,
 } IOCPTYPE, *PIOCPTYPE;
 
-// 通信包格式
 #pragma pack(push, 1)
 typedef struct tagPacketFormat
 {
-    PACKETTYPE  ePacketType_;
-    DWORD       dwSize_;
-    char        szContent_[1];
+    PACKETTYPE      ePacketType_;
+    DWORD           dwSize_;
+    TCHAR           szFileFullName_[MAX_PATH + sizeof(TCHAR)];
+    ULONGLONG       ullFilePointPos_;
+    char            szContent_[1];
 } PACKETFORMAT, *PPACKETFORMAT;
 #pragma pack(pop)
 
-// 重叠结构体封装
+
 typedef struct tagOverlappedWithData
 {
     IOCPTYPE        eIOCPType_;
@@ -119,7 +119,6 @@ typedef struct tagOverlappedWithData
 } OVERLAPPEDWITHDATA, *POVERLAPPEDWITHDATA;
 
 
-// 接待线程参数
 typedef struct tagAcceptThreadParam
 {
     SOCKET              sctAcceptSocket_;
@@ -132,35 +131,24 @@ typedef struct tagAcceptThreadParam
 typedef struct tagClientInfo
 {
     sockaddr_in         stClientAddrInfo_;
-    // 最近一次通信
     time_t              tLastTime_;
     SOCKET              sctClientSocket_;
-    // 读写缓冲区
     CBuffer             RecvBuffer_;
     CBuffer             SendBuffer_;
-    // 接收后的临时处理缓冲区
     char                szRecvTmpBuffer_[PACKET_CONTENT_MAXSIZE];
-    // 发送前的临时构建缓冲区
     char                szSendTmpBuffer_[PACKET_CONTENT_MAXSIZE];
-    // 临界区
     CCriticalSection    CriticalSection_;
-    // 文件传输对话框
     CFileTransferDlg    *pFileTransferDlg_ = NULL;
-    // CMD对话框
     CCmdDlg             *pCmdDlg_ = NULL;
-    // 进程管理对话框
     CProcessManagerDlg  *pProcessManagerDlg_ = NULL;
-    // 屏幕监控
     CScreenShowerDlg    *pScreenShowerDlg_ = NULL;
 } CLIENTINFO, *PCLIENTINFO;
 
-// IOCP线程所需要的附加数据
 typedef struct tagIOCPThreadAddtionData
 {
     CClientManager *pClientManager_;
 } IOCPTHREADADDTIONDATA, *PIOCPTHREADADDTIONDATA;
 
-// IOCP线程参数
 typedef struct tagIOCPThreadParam
 {
     CCommunicationIOCP      *pIOCP_;

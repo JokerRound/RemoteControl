@@ -5,7 +5,7 @@
 
 CThread::CThread()
 {
-    m_pevtThreadStartSuccess = new CEvent(TRUE, FALSE);
+    m_pevtThreadStartSuccess = new CEvent(FALSE, FALSE);
 }
 
 CThread::~CThread()

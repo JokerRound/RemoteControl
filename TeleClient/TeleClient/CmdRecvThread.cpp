@@ -19,15 +19,19 @@ bool CCmdRecvThread::OnThreadEventRun(LPVOID lpParam)
 
     while (TRUE)
     {
-        // 从管道中接收数据
+        // Get data of cmd from pipe.
         bRet = pTeleClientDlg->ReadDataFromCmd();
         if (!bRet)
         {
 #ifdef DEBUG
             OutputDebugString(_T("从CMD中读取数据失败\r\n"));
 #endif // DEBUG
+            // Connect failed.
             if (pTeleClientDlg->m_bCmdQuit)
             {
+                // Close those pipe.
+
+
                 break;
             }
         }

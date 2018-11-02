@@ -15,7 +15,7 @@ CCmdDlg::CCmdDlg(CString &ref_csIPAndPort,
                  PCLIENTINFO pClientInfo,
                  CCommunicationIOCP &ref_IOCP,
                  CWnd* pParent /*=NULL*/)
-	: CDialogEx(IDD_CMD, pParent)
+    : CDialogEx(IDD_CMD, pParent)
     , m_ref_csIPAndPort(ref_csIPAndPort)
     , m_ref_IOCP(ref_IOCP)
     , m_pstClientInfo(pClientInfo)

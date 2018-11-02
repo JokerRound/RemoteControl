@@ -13,6 +13,11 @@ CCommunicationIOCP::CCommunicationIOCP()
 
 CCommunicationIOCP::~CCommunicationIOCP()
 {
+    if (NULL != m_phthdArray)
+    {
+        delete[] m_phthdArray;
+        m_phthdArray = NULL;
+    }
 }
 
 BOOL CCommunicationIOCP::Create(PIOCPTHREADADDTIONDATA pAddtionData /*= NULL*/,
@@ -42,7 +47,10 @@ BOOL CCommunicationIOCP::Create(PIOCPTHREADADDTIONDATA pAddtionData /*= NULL*/,
             // 如果创建IOCP成功，则开始创建线程
             m_stIOCPThreadParam.pIOCP_ = this;
             m_stIOCPThreadParam.pThreadAddtionData_ = pAddtionData;
-            // *注意* 因为是立即执行，此时创建的线程会进入到IOCP的已释放线程列表
+            //*********************************************************
+            //*ALARM* Those memory will free when this class destroy.
+            //*********************************************************
+            // Those threads will come in the had freed list of IOCP
             m_phthdArray = new HANDLE[m_dwMaxThreadNum];
             for (size_t cntI = 0; cntI < m_dwMaxThreadNum; ++cntI)
             {
@@ -160,7 +168,7 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
                 pstClientInfo->RecvBuffer_.Write((PBYTE)pstData->szPacket_,
                                                  dwTransferNumBytes);
 
-                // Use loop to receive.
+                // Receive loop.
                 while (TRUE)
                 {
                     // 判断是否已收到完整包头, 不完整则退出
@@ -182,11 +190,12 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
                         break;
                     }
                     
-                    // 开始处理数据包
+                    // Begin to deal with packet.
                     PACKETFORMAT stTmpHeader;
+                    memmove(&stTmpHeader, 0, sizeof(stTmpHeader));
 
                     //*****************************
-                    // *ALARM* It should remove the one byte in flexible array.
+                    //* ALARM * It should remove the one byte in flexible array.
                     //*****************************
                     pstClientInfo->RecvBuffer_.Read((PBYTE)&stTmpHeader,
                                                     PACKET_HEADER_SIZE);
@@ -206,11 +215,11 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
                     OnHandlePacket(stTmpHeader.ePacketType_,
                                    pstClientInfo->sctClientSocket_,
                                    pstClientInfo->szRecvTmpBuffer_,
-                                   stTmpHeader.dwSize_,
+                                   stTmpHeader,
                                    pstClientInfo,
                                    *pIOCP);
 
-                } //! while 循环接收 END
+                } //! while "Recevie loop" END
 
                 // 再次投递一个Recv请求
                 bRet = pIOCP->PostRecvRequst(pstClientInfo->sctClientSocket_);
@@ -222,12 +231,6 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
             } //! case IOCP_RECV END
             case IOCP_SEND:
             {
-                // 成功发送了数据包
-                // 发送了多少数据，则从发送缓冲区中清除多少数据
-                //pstClientInfo->CriticalSection_.Lock();
-                //pstClientInfo->SendBuffer_.Delete(dwTransferNumBytes);
-                //pstClientInfo->CriticalSection_.Unlock();
-
                 // 发送缓冲区中仍有数据
                 if (pstClientInfo->SendBuffer_.GetBufferLen() > 0)
                 {
@@ -357,3 +360,44 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
 
     return FALSE;
 } //! CCommunicationIOCP::PostRecvRequst END
+
+// Package the process that send data.
+BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
+                     CCommunicationIOCP &ref_IOCP,
+                     CString &ref_csData,
+                     PACKETTYPE ePacketType)
+{
+    PPACKETFORMAT pstPacket =
+        (PPACKETFORMAT)ref_pstClientInfo->szSendTmpBuffer_;
+
+    //*************************************
+    //*ALARM* Synchronize
+    //*************************************
+    ref_pstClientInfo->CriticalSection_.Lock();
+    pstPacket->ePacketType_ = ePacketType;
+
+    pstPacket->dwSize_ = (ref_csData.GetLength() + 1) * sizeof(TCHAR);
+
+    memmove(pstPacket->szContent_,
+            ref_csData.GetBuffer(),
+            pstPacket->dwSize_);
+
+    ref_pstClientInfo->SendBuffer_.Write(
+        (PBYTE)ref_pstClientInfo->szSendTmpBuffer_,
+        PACKET_HEADER_SIZE + pstPacket->dwSize_);
+
+    // Clean send buffer temporary.
+    memset(ref_pstClientInfo->szSendTmpBuffer_,
+           0,
+           PACKET_HEADER_SIZE + pstPacket->dwSize_);
+
+    // Make IOCP to deal with send.
+    BOOL bRet =
+        ref_IOCP.PostSendRequst(ref_pstClientInfo->sctClientSocket_,
+                                ref_pstClientInfo->SendBuffer_);
+
+    ref_pstClientInfo->SendBuffer_.ClearBuffer();
+    ref_pstClientInfo->CriticalSection_.Unlock();
+
+    return bRet;
+} //! SendDataUseIOCP END

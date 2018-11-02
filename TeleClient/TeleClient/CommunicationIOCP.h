@@ -43,5 +43,15 @@ public:
 
 };
 
+BOOL SendDataUseIOCP(_In_ CLIENTINFO *&ref_pstClientInfo,
+                     _In_ CCommunicationIOCP &ref_IOCP,
+                     _In_ CString &ref_csData,
+                     _In_ PACKETTYPE ePacketType);
 
+BOOL SendDataUseIOCP(_In_ CLIENTINFO *&ref_pstClientInfo,
+                     _In_ CCommunicationIOCP &ref_IOCP,
+                     _In_ CString &ref_csData,
+                     _In_ const DWORD &ref_dwSize,
+                     _In_ CString &ref_csFileFullName,
+                     _In_ const ULONGLONG ullFilePointPos);
 #endif // !COMMUNICATIONIOCP_H_

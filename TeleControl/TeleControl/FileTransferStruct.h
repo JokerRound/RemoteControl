@@ -18,33 +18,50 @@ typedef enum tagFileListStyle
     FLS_REPORT,
 } FILELISTSTYLE, *PFILELISTSTYLE;
 
-//typedef struct tagFileInfo
-//{
-//    int iIconIndex;
-//    // File and Time use '?' to separate.
-//    TCHAR *szFileNameAndTime;
-//} FILEINFO, *PFILEINFO;
+typedef struct tagFileDataInQueue
+{
+    CString     csFileFullName_;
+    ULONGLONG   ullFilePointPos_;
+    CBuffer     FileDataBuffer_;
+} FILEDATAINQUEUE, *PFILEDATAINQUEUE;
 
-typedef enum tagFileTaskState
+typedef enum tagFileTransportListColumn
+{
+    FTLC_FILEFULLNAME,
+    FTLC_TASKTYPE,
+    FTLC_TOTALSIZE,
+    FTLC_TRANSMITTEDSIZE,
+    FTLC_TASKSTATUS,
+} FILETRANSPORTLISTCOLUMN, *PFILETRANSPORTLISTCOLUMN;
+
+typedef enum tagFileTaskStatus
 {
     FTS_START,
+    FTS_TRANSPORTING,
     FTS_PAUSE,
-    FTS_END,
-} FILETASKSTATE, *PFILETASKSTATE;
+    FTS_FINISH,
+
+    NUM_FILETASKSTATUS
+} FILETASKSTATUS, *PFILETASKSTATUS;
 
 typedef enum tagFileTaskType
 {
     FTT_GETFILE,
     FTT_PUTFILE,
+
+    NUM_FILETASKTYPE
 } FILETASKTYPE, *PFILETASKTYEP;
 
 typedef struct tagFileTransportTask
 {
-    CString             csFileFullPath_;
+    CString             csFilePath_;
+    BOOL                bHasNewFileName_;
+    CString             csFileOrignalName_;
+    CString             csFileNewName_;
     FILETASKTYPE        eTaskType_;
-    u_int64             uint64FileTotalSize_ = 0;
-    u_int64             uint64TransmissionSize_ = 0;
-    FILETASKSTATE       eTaskState_;
+    ULONGLONG           ullFileTotalSize_ = 0;
+    ULONGLONG           ullTransmissionSize_ = 0;
+    FILETASKSTATUS      eTaskStatus_;
 } FILETRANSPORTTASK, *PFILETRANSPORTTASK;
 
 #endif // !FILETRANSFERSTRUCT_H_
