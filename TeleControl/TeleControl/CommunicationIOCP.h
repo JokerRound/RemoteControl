@@ -20,6 +20,7 @@ private:
     CCriticalSection m_CriticalSection;
     // 线程参数
     IOCPTHREADPARAM m_stIOCPThreadParam = { 0 };
+
 public:
     CCommunicationIOCP();
     ~CCommunicationIOCP();

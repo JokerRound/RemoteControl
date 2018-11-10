@@ -73,8 +73,9 @@ bool CConnectThread::OnThreadEventRun(LPVOID lpParam)
             // 窗口类保存Socket上下文信息
             pTeleClientDlg->m_pstClientInfo = pstClientInfo;
             // Bind socket with IOCP.
-            BOOL bRet = pIOCP->Associate((HANDLE)sctConnectSocket,
-                (ULONG_PTR)pstClientInfo);
+            BOOL bRet = 
+                pIOCP->Associate((HANDLE)sctConnectSocket,
+                                 (ULONG_PTR)pstClientInfo);
             if (!bRet)
             {
                 OutputDebugString(_T("绑定IOCP失败\r\n"));
@@ -85,7 +86,7 @@ bool CConnectThread::OnThreadEventRun(LPVOID lpParam)
             // 投递一个接收请求
             pIOCP->PostRecvRequst(pstClientInfo->sctClientSocket_);
 
-            // 设置计时器
+            // Begin the heartbeat Timer.
             bRet = pTeleClientDlg->SetTimer(TIMER_HEATBEAT,
                                             HEATBEAT_ELAPSE,
                                             NULL);
@@ -95,7 +96,6 @@ bool CConnectThread::OnThreadEventRun(LPVOID lpParam)
             pTeleClientDlg->m_bBreakEventHasSigal = FALSE;
             if (dwRet == WAIT_FAILED)
             {
-                // 事件因为某些原因被关闭，程序退出
 #ifdef DEBUG
                 OutputDebugString(_T("中断事件等待异常\r\n"));
 #endif // DEBUG

@@ -4,12 +4,13 @@
 ## Ability
 - CMD.（profecting..）
 - File transmission.（profecting..）
-- Process manager.
+1、Support download file now, (upload file is profecting...)
+
+
 ## another
-- HearBeat.（profecting..）
+- HearBeat.（OK）
 
 
 ## Description
 Client and Server both use IOCP modle to connection. 
 Server is single document mode， and client is dialog mode（profecting..）.
-

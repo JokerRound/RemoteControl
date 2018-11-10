@@ -1,3 +1,15 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-11-04
+// Description: 
+//    This file include some assist function.
+//
+// Modify Log:
+//    2018-10-18    Hoffman
+//      Info: Create.
+//******************************************************************************
+
 #include "stdafx.h"
 #include "assistFunc.h"
 
@@ -73,4 +85,3 @@ void GetErrorMessage(DWORD dwError, CString &csMessage)
 
     LocalFree(hLocal);
 } //! GetErrorMessage END
-

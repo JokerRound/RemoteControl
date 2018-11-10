@@ -1,3 +1,15 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-11-08
+// Description: 
+//    achieve of method in CCommunicationIOCP and related function.
+//
+// Modify Log:
+//    2018-10-24    Hoffman
+//      Info: Add "SendDataUseIOCP" function achieve.
+//******************************************************************************
+
 #include "stdafx.h"
 #include "CommunicationIOCP.h"
 #include "MacroShare.h"
@@ -21,7 +33,7 @@ BOOL CCommunicationIOCP::Create(PIOCPTHREADADDTIONDATA pAddtionData /*= NULL*/,
 {
     if (m_hIOCP == NULL)
     {
-        // 创建IOCP
+        // Create IOCP.
         m_hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE,
                                          NULL,
                                          0,
@@ -30,20 +42,22 @@ BOOL CCommunicationIOCP::Create(PIOCPTHREADADDTIONDATA pAddtionData /*= NULL*/,
         m_dwMaxThreadNum = dwThreadNum;
         if (m_dwMaxThreadNum == 0)
         {
-            // 获取系统CPU核心数
+            // Get cpu cores.
             SYSTEM_INFO stSi;
             ::GetSystemInfo(&stSi);
             
-            // 计算线程数
+            // Set number of threads.
             m_dwMaxThreadNum = stSi.dwNumberOfProcessors;
         }
 
-        if (m_hIOCP != NULL)
+        if (NULL != m_hIOCP)
         {
-            // 如果创建IOCP成功，则开始创建线程
+            // Create threads if create iocp successfully.
             m_stIOCPThreadParam.pIOCP_ = this;
             m_stIOCPThreadParam.pThreadAddtionData_ = pAddtionData;
-            // *注意* 因为是立即执行，此时创建的线程会进入到IOCP的已释放线程列表
+
+            // This threads will be added into 
+            // "Had freed threads queue" of iocp.
             m_phthdArray = new HANDLE[m_dwMaxThreadNum];
             for (size_t cntI = 0; cntI < m_dwMaxThreadNum; ++cntI)
             {
@@ -67,13 +81,13 @@ BOOL CCommunicationIOCP::Create(PIOCPTHREADADDTIONDATA pAddtionData /*= NULL*/,
 BOOL CCommunicationIOCP::Associate(HANDLE hFileHandle,
                                    ULONG_PTR pulCompletionKey /*= 0*/)
 {
-    // *注意* 当该函数用于设备绑定时，第4个参数会被忽略
+    // The fourth parament will be ignored.
     HANDLE hRet = CreateIoCompletionPort(hFileHandle,
                                          m_hIOCP,
                                          pulCompletionKey,
                                          m_dwMaxThreadNum);
     return hRet == m_hIOCP;
-}
+} //! CCommunicationIOCP::Associate END
 
 BOOL CCommunicationIOCP::Destroy()
 {
@@ -205,12 +219,6 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
             } //! case IOCP_RECV END
             case IOCP_SEND:
             {
-                // 成功发送了数据包
-                // 发送了多少数据，则从发送缓冲区中清除多少数据
-                //pstClientInfo->CriticalSection_.Lock();
-                //pstClientInfo->SendBuffer_.Delete(dwTransferNumBytes);
-                //pstClientInfo->CriticalSection_.Unlock();
-
                 // 发送缓冲区中仍有数据
                 if (pstClientInfo->SendBuffer_.GetBufferLen() > 0)
                 {
@@ -236,20 +244,28 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
 BOOL CCommunicationIOCP::PostSendRequst(const SOCKET sctTarget,
                                         CBuffer &SendBuffer)
 {
+#ifdef DEBUG
+    DWORD dwError = 0;
+    CString csErrorMessage;
+    DWORD dwFileLine = 0;
+#endif // DEBUG
     POVERLAPPEDWITHDATA pstOverlappedWithData = NULL;
+    BOOL bNoError = FALSE;
 
     do
     {
         DWORD dwSendedBytes = 0;
         pstOverlappedWithData = new OVERLAPPEDWITHDATA();
 
-        if (pstOverlappedWithData == NULL)
+        if (NULL == pstOverlappedWithData)
         {
-            OutputDebugString(_T("PostRecvRequst申请内存失败\r\n"));
+#ifdef DEBUG
+            dwFileLine = __LINE__;
+#endif // DEBU
             break;
         }
 
-        // buffer和长度赋值
+        // Set buffer and length.
         pstOverlappedWithData->eIOCPType_ = IOCP_SEND;
         pstOverlappedWithData->stBuffer_.buf =
             (char *)SendBuffer.GetBuffer();
@@ -264,26 +280,34 @@ BOOL CCommunicationIOCP::PostSendRequst(const SOCKET sctTarget,
                     0,
                     (WSAOVERLAPPED *)&pstOverlappedWithData->stOverlapped_,
                     NULL);
-        if (iRet == SOCKET_ERROR &&
+        if (SOCKET_ERROR == iRet  &&
             WSAGetLastError() != ERROR_IO_PENDING)
         {
-            OutputDebugString(_T("WSASend失败\r\n"));
+#ifdef DEBUG
+            dwFileLine = __LINE__;
+#endif // DEBU
             break;
         }
 
-        // 正常结束
-        return TRUE;
+        bNoError = TRUE;
     } while (FALSE);
     
-    // 异常回收资源
-    if (pstOverlappedWithData == NULL)
+    if (!bNoError)
     {
-        delete pstOverlappedWithData;
-        pstOverlappedWithData = NULL;
-    } 
+#ifdef DEBUG
+        dwError = GetLastError();
+        GetErrorMessage(dwError, csErrorMessage);
+        OutputDebugStringWithInfo(csErrorMessage, __FILET__, dwFileLine);
+#endif // DEBUG
 
-    // 出现异常
-    return FALSE;
+        if (NULL != pstOverlappedWithData)
+        {
+            delete pstOverlappedWithData;
+            pstOverlappedWithData = NULL;
+        }
+    }
+
+    return bNoError;
 } //! CCommunicationIOCP::PostSendRequst END
 
 BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
@@ -293,7 +317,6 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
     do
     {
         DWORD dwRecvedBytes = 0;
-        // *注意* 该空间在处理完收到的数据后尽快释放
         pstOverlappedWithData = new OVERLAPPEDWITHDATA();
 
         if (pstOverlappedWithData == NULL)
@@ -304,10 +327,8 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
 
         // buffer和长度赋值
         pstOverlappedWithData->eIOCPType_ = IOCP_RECV;
-        pstOverlappedWithData->stBuffer_.buf =
-            pstOverlappedWithData->szPacket_;
-        pstOverlappedWithData->stBuffer_.len =
-            PACKET_CONTENT_MAXSIZE;
+        pstOverlappedWithData->stBuffer_.buf = pstOverlappedWithData->szPacket_;
+        pstOverlappedWithData->stBuffer_.len = PACKET_CONTENT_MAXSIZE;
 
         DWORD dwFlags = 0;
         int iRet = 
@@ -330,7 +351,7 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
     } while (FALSE);
     
     // 异常回收资源
-    if (pstOverlappedWithData == NULL)
+    if (NULL != pstOverlappedWithData)
     {
         delete pstOverlappedWithData;
         pstOverlappedWithData = NULL;

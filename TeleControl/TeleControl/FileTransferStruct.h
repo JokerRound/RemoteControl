@@ -20,25 +20,34 @@ typedef enum tagFileListStyle
 
 typedef struct tagFileDataInQueue
 {
-    CString     csFileFullName_;
+    CPath       phFileNameWithPath_;
     ULONGLONG   ullFilePointPos_;
     CBuffer     FileDataBuffer_;
 } FILEDATAINQUEUE, *PFILEDATAINQUEUE;
 
 typedef enum tagFileTransportListColumn
 {
-    FTLC_FILEFULLNAME,
+    FTLC_DSTFILE,
+    FTLC_SRCFILE,
     FTLC_TASKTYPE,
     FTLC_TOTALSIZE,
     FTLC_TRANSMITTEDSIZE,
     FTLC_TASKSTATUS,
 } FILETRANSPORTLISTCOLUMN, *PFILETRANSPORTLISTCOLUMN;
 
+typedef enum tagFileTransmittionParticipantType
+{
+    FTPT_SERVER,
+    FTPT_CLIENT,
+
+    NUM_PARTICIPANT
+}FILETRANSMITTIONPARTICIPANTTYPE, *PFILETRANSMITTIONPARTICIPANTTYPE;
+
 typedef enum tagFileTaskStatus
 {
-    FTS_START,
-    FTS_TRANSPORTING,
     FTS_PAUSE,
+    FTS_TRANSPORTING,
+    FTS_ERROR,
     FTS_FINISH,
 
     NUM_FILETASKSTATUS
@@ -54,14 +63,18 @@ typedef enum tagFileTaskType
 
 typedef struct tagFileTransportTask
 {
-    CString             csFilePath_;
-    BOOL                bHasNewFileName_;
-    CString             csFileOrignalName_;
-    CString             csFileNewName_;
+    CPath               phFileNameWithPathSrc_;
+    CPath               phFileNameWithPathDst_;
     FILETASKTYPE        eTaskType_;
     ULONGLONG           ullFileTotalSize_ = 0;
     ULONGLONG           ullTransmissionSize_ = 0;
     FILETASKSTATUS      eTaskStatus_;
+    int                 iIdxInTaskList_;
 } FILETRANSPORTTASK, *PFILETRANSPORTTASK;
+
+typedef enum tagFileDlgUpdateType
+{
+    FDUT_TASKINFO,
+} FILEDLGUPDATETYPE, *PFileDlgUpdateType;
 
 #endif // !FILETRANSFERSTRUCT_H_

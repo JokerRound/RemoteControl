@@ -13,8 +13,10 @@ BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
     INT cchDevName;
 
     //检查参数
-    if(!pszDosPath || !pszNtPath )
+    if (!pszDosPath || !pszNtPath)
+    {
         return FALSE;
+    }
  
     //获取本地磁盘字符串
     if(GetLogicalDriveStrings(sizeof(szDriveStr), szDriveStr))
@@ -183,12 +185,12 @@ BOOL OnFileDevice(SOCKET sctTargetSocket,
                   PCLIENTINFO  pstClientInfo,
                   CCommunicationIOCP &IOCP)
 {
-    // 获取盘符
-    CString csDevice;
+    // Get Driver.
+    CString csDriver;
     DWORD dwRet = 
         GetLogicalDriveStrings(MAXBYTE - 1,
-                               csDevice.GetBufferSetLength(MAXBYTE - 1));
-    csDevice.ReleaseBuffer();
+                               csDriver.GetBufferSetLength(MAXBYTE - 1));
+    csDriver.ReleaseBuffer();
     if (dwRet == 0)
     {
 #ifdef DEBUG
@@ -215,7 +217,7 @@ BOOL OnFileDevice(SOCKET sctTargetSocket,
         pstPacket->dwSize_ = dwRet * sizeof(TCHAR);
 
         memmove(pstPacket->szContent_,
-                csDevice.GetBuffer(),
+                csDriver.GetBuffer(),
                 pstPacket->dwSize_);
     }
     else
@@ -256,10 +258,10 @@ BOOL OnGetFileCommand(SOCKET sctTargetSocket,
     // Clean the temporary buffer of revice.
     memset(szBuffer, 0, uiLen);
 
-    BOOL bRet = pstClientInfo->pTeleClientDlg_->
-        SendMessage(WM_GETFILE, 
-                    (WPARAM)&csFileListToGet,
-                    (LPARAM)pstClientInfo);
+    BOOL bRet = 
+        pstClientInfo->pTeleClientDlg_->SendMessage(WM_GETFILE, 
+                                                    (WPARAM)&csFileListToGet,
+                                                    (LPARAM)pstClientInfo);
 
     return bRet;
 

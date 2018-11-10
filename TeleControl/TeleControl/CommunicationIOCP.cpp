@@ -192,11 +192,11 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
                     
                     // Begin to deal with packet.
                     PACKETFORMAT stTmpHeader;
-                    memmove(&stTmpHeader, 0, sizeof(stTmpHeader));
+                    memset(&stTmpHeader, 0, sizeof(stTmpHeader));
 
-                    //*****************************
+                    //*****************************************************
                     //* ALARM * It should remove the one byte in flexible array.
-                    //*****************************
+                    //*****************************************************
                     pstClientInfo->RecvBuffer_.Read((PBYTE)&stTmpHeader,
                                                     PACKET_HEADER_SIZE);
                     if (stTmpHeader.dwSize_ > 0 &&
@@ -221,17 +221,17 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
 
                 } //! while "Recevie loop" END
 
-                // 再次投递一个Recv请求
+                // Post new recv request.
                 bRet = pIOCP->PostRecvRequst(pstClientInfo->sctClientSocket_);
                 if (!bRet)
                 {
                     OutputDebugString(_T("Recv请求投递失败\r\n"));
                 }
+                
                 break;
             } //! case IOCP_RECV END
             case IOCP_SEND:
             {
-                // 发送缓冲区中仍有数据
                 if (pstClientInfo->SendBuffer_.GetBufferLen() > 0)
                 {
                     pIOCP->PostSendRequst(pstClientInfo->sctClientSocket_,
@@ -242,13 +242,13 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
             }
         } //! switch END
 
-        // 释放重叠结构体
+        // Free overlap struct.
         if (pstData != NULL)
         {
             delete pstData;
             pstData = NULL;
         }
-    } //! while 线程循环获取完成包 END
+    } //! while "线程循环获取完成包" END
 
     return 0;
 } //! CCommunicationIOCP::ThreadWork END
@@ -261,15 +261,16 @@ BOOL CCommunicationIOCP::PostSendRequst(const SOCKET sctTarget,
     do
     {
         DWORD dwSendedBytes = 0;
+        //****************************************
+        //*ALARM* This memory will free when IOCP deal with it finished.
+        //****************************************
         pstOverlappedWithData = new OVERLAPPEDWITHDATA();
-
         if (pstOverlappedWithData == NULL)
         {
             OutputDebugString(_T("PostRecvRequst申请内存失败\r\n"));
             break;
         }
 
-        // buffer和长度赋值
         pstOverlappedWithData->eIOCPType_ = IOCP_SEND;
         pstOverlappedWithData->stBuffer_.buf =
             (char *)SendBuffer.GetBuffer();
@@ -297,7 +298,7 @@ BOOL CCommunicationIOCP::PostSendRequst(const SOCKET sctTarget,
     } while (FALSE);
     
     // Free resource when had errored.
-    if (pstOverlappedWithData == NULL)
+    if (NULL != pstOverlappedWithData)
     {
         delete pstOverlappedWithData;
         pstOverlappedWithData = NULL;
@@ -317,8 +318,7 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
         //*ALARM* This memory will free when IOCP deal with it finished.
         //****************************************
         pstOverlappedWithData = new OVERLAPPEDWITHDATA();
-
-        if (pstOverlappedWithData == NULL)
+        if (NULL == pstOverlappedWithData)
         {
             OutputDebugString(_T("PostRecvRequst申请内存失败\r\n"));
             break;
@@ -326,10 +326,8 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
 
         // Give buffer and length.
         pstOverlappedWithData->eIOCPType_ = IOCP_RECV;
-        pstOverlappedWithData->stBuffer_.buf = 
-            pstOverlappedWithData->szPacket_;
-        pstOverlappedWithData->stBuffer_.len =
-            PACKET_CONTENT_MAXSIZE;
+        pstOverlappedWithData->stBuffer_.buf = pstOverlappedWithData->szPacket_;
+        pstOverlappedWithData->stBuffer_.len = PACKET_CONTENT_MAXSIZE;
 
         DWORD dwFlags = 0;
         int iRet = 
@@ -351,8 +349,8 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
         return TRUE;
     } while (FALSE);
     
-    // Free resource when had errored.
-    if (pstOverlappedWithData == NULL)
+    // Free resource when error.
+    if (NULL != pstOverlappedWithData)
     {
         delete pstOverlappedWithData;
         pstOverlappedWithData = NULL;

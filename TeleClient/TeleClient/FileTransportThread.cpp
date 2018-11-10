@@ -34,9 +34,9 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
     pTeleClientDlg->m_pevtGetFileThreadInitializeEvent->SetEvent();
 
     // Get path.
-    std::basic_string<TCHAR> strFilePath;
+    CPath phFilePath;
     int iIndex = csFileListToGet.Find(_T("?"));
-    strFilePath = csFileListToGet.Left(iIndex).GetString();
+    phFilePath = csFileListToGet.Left(iIndex).GetString();
     csFileListToGet = 
         csFileListToGet.Right(csFileListToGet.GetLength() - iIndex -1);
 
@@ -50,6 +50,7 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
     // Get filename and transport data.
     while (!strFileList.empty())
     {
+        CPath phFileNameWithPath = phFilePath;
         bRet = std::regex_search<TCHAR>(strFileList.c_str(),
                                         sMatchResult,
                                         Rgx);
@@ -64,18 +65,22 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
         }
 
         std::basic_string<TCHAR> strFileName = sMatchResult[1];
-        std::basic_string<TCHAR> strFileNameWithPath =
-            strFilePath + _T("\\") + strFileName;
         ULONGLONG ullFileTransportStartPos = 
             _ttoi(((std::basic_string<TCHAR>)sMatchResult[2]).c_str());
 
+        phFileNameWithPath.Append(strFileName.c_str());
         CFile fTargetFile;
         // Begin file operation.
         do
         {
+            if (phFileNameWithPath.IsDirectory())
+            {
+                // TODO: Have directory.
+                break;
+            }
+
             // Open file with read mode.
-            bRet = fTargetFile.Open(strFileNameWithPath.c_str(),
-                                    CFile::modeRead);
+            bRet = fTargetFile.Open(phFileNameWithPath, CFile::modeRead);
             if (!bRet)
             {
 #ifdef DEBUG
@@ -90,8 +95,8 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
             fTargetFile.Seek(ullFileTransportStartPos, CFile::begin);
 
             // The formate is "FileFullName:FilePointPos|FileData"
-
             CString csDataBlock;
+
             // Read data and transport to Server.
             do
             {
@@ -102,13 +107,16 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
                     FILE_TRANSPORT_MAXSIZE - 1);
                 csDataBlock.ReleaseBuffer();
 
-                CString csFileNameWithPath = strFileNameWithPath.c_str();
+                if (0 == dwSize)
+                {
+                    break;
+                }
 
                 bRet = SendDataUseIOCP(pstClientInfo,
                                        *pIOCP,
                                        csDataBlock,
                                        dwSize,
-                                       csFileNameWithPath,
+                                       phFileNameWithPath,
                                        fTargetFile.GetPosition());
                 if (!bRet)
                 {
@@ -121,7 +129,7 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
                 }
 
 
-            } while (!csDataBlock.IsEmpty()); // while "Read data" END
+            } while (TRUE); // while "Read data" END
 
             fTargetFile.Close();
         } while (FALSE); // while "Begin file operation" END

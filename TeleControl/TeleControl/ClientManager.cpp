@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "ClientManager.h"
-
+#include "FileTransferDlg.h"
 
 CClientManager::CClientManager()
 {
@@ -103,7 +103,7 @@ void CClientManager::Destory()
         // Get first postion.
         POSITION posI = m_mapClient.GetStartPosition();
 
-        while (posI != NULL)
+        while (posI)
         {
             m_mapClient.GetNextAssoc(posI, sctTmp, pstClientInfoTmp);
 
@@ -112,7 +112,8 @@ void CClientManager::Destory()
             {
                 if (NULL != pstClientInfoTmp->pFileTransferDlg_)
                 {
-
+                    delete pstClientInfoTmp->pFileTransferDlg_;
+                    pstClientInfoTmp->pFileTransferDlg_ = NULL;
                 }
 
                 delete pstClientInfoTmp;

@@ -1,3 +1,18 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-07-24
+// Description: 
+//      Achieve of class CFileTransportManager's member method.
+//
+// Modify Log:
+//      2018-11-10    Hoffman
+//      Info: Move achieve of method below from FileTransferDlg.cpp.
+//              InsertFileDataToQueue
+//              GetFileDataFromQueue
+//              CheckFileDataQueueEmpty
+//******************************************************************************
+
 #include "stdafx.h"
 #include "FileTransportManager.h"
 
@@ -14,60 +29,43 @@ CFileTransportManager::~CFileTransportManager()
     m_CriticalSection.Unlock();
 }
 
+void CFileTransportManager::InsertFileObject(const CString csFileFullName,
+                                             CFile *pfFileObject)
+{
+    m_CriticalSection.Lock();
+    m_mapFileObject.SetAt(csFileFullName, pfFileObject);
+    m_CriticalSection.Unlock();
+} //! CFileTransportManager::InsertFileObject END
+
 void CFileTransportManager::InsertGetFileTask(const CString csFileFullName,
                                               PFILETRANSPORTTASK pstTaskInfo)
 {
     m_CriticalSection.Lock();
-    m_mapGetFileTaskInfo.SetAt(csFileFullName, pstTaskInfo);
+    m_ctGetFileTaskInfo.AddTail(pstTaskInfo);
     m_CriticalSection.Unlock();
 } //! CFileTransportManager::InsertTask END
 
-void CFileTransportManager::UpdateFileNewName(const CString csFileFullName,
-                                              const CString csFileNewName)
-{
-    FILETRANSPORTTASK *pstTargetTask = NULL;
-    pstTargetTask = GetTask(csFileFullName);
-    
-    pstTargetTask->csFileNewName_ = csFileNewName;
-    pstTargetTask->bHasNewFileName_ = TRUE;
-}
 
-
-void CFileTransportManager::UpdateKey(const CString csOrginalKey, 
-                                      const CString csNewKey)
-{
-    FILETRANSPORTTASK *pstTargetTask = NULL;
-    pstTargetTask = GetTask(csOrginalKey);
-
-    if (NULL == pstTargetTask)
-    {
-#ifdef DEBUG
-        OutputDebugStringWithInfo(_T("Don't fond target data in map."),
-                                  __FILET__,
-                                  __LINE__);
-#endif // DEBUG
-    }
-
-    InsertGetFileTask(csNewKey, pstTargetTask);
-} //! CFileTransportManager::UpdateKey END
-
-FILETRANSPORTTASK *CFileTransportManager::GetTask(const CString csFileName)
+FILETRANSPORTTASK *CFileTransportManager::GetTask(
+    CPath &ref_phFileNameWithPathDst)
 {
     FILETRANSPORTTASK *pstTargetTask = NULL;
 
     m_CriticalSection.Lock();
-    BOOL bRet = m_mapGetFileTaskInfo.Lookup(csFileName, pstTargetTask);
-    m_CriticalSection.Unlock();
-    
-    if (!bRet)
+    POSITION posI = m_ctGetFileTaskInfo.GetHeadPosition();
+
+    while (posI)
     {
-#ifdef DEBUG
-        OutputDebugStringWithInfo(_T(""),
-                                  __FILET__,
-                                  __LINE__);
-#endif // DEBUG
+        pstTargetTask = m_ctGetFileTaskInfo.GetNext(posI);
+        if (NULL != pstTargetTask &&
+            pstTargetTask->phFileNameWithPathDst_.m_strPath ==
+            ref_phFileNameWithPathDst.m_strPath)
+        {
+            break;
+        }
     }
 
+    m_CriticalSection.Unlock();
     return pstTargetTask;
 } //! CFileTransportManager::GetTask END
 
@@ -75,15 +73,15 @@ void CFileTransportManager::GetAllValue(std::vector<PFILETRANSPORTTASK>
                                         &ref_vctAllValue)
 {
     m_CriticalSection.Lock();
-    if (!m_mapGetFileTaskInfo.IsEmpty())
+    if (!m_ctGetFileTaskInfo.IsEmpty())
     {
-        POSITION posI = m_mapGetFileTaskInfo.GetStartPosition();
+        POSITION posI = m_ctGetFileTaskInfo.GetHeadPosition();
         CString csTmpKey;
         FILETRANSPORTTASK *pstTaskInfo = NULL; 
 
         while (posI)
         {
-            m_mapGetFileTaskInfo.GetNextAssoc(posI, csTmpKey, pstTaskInfo);
+            pstTaskInfo = m_ctGetFileTaskInfo.GetNext(posI);
 
             if (NULL != pstTaskInfo)
             {
@@ -94,18 +92,116 @@ void CFileTransportManager::GetAllValue(std::vector<PFILETRANSPORTTASK>
     m_CriticalSection.Unlock();
 } //! CFileTransportManager::GetAllValue END
 
+CFile *CFileTransportManager::GetFileObject(CPath &ref_phFileNameWithPathDst)
+{
+#ifdef DEBUG
+    DWORD dwError = -1;
+    CString csErrorMessage;
+#endif // DEBUG
+
+    CFile *pfTargetFile = NULL; 
+
+    m_CriticalSection.Lock();
+    BOOL bRet = m_mapFileObject.Lookup(ref_phFileNameWithPathDst, pfTargetFile);
+    if (!bRet)
+    {
+#ifdef DEBUG
+        OutputDebugStringWithInfo(_T("Don't fond the file object.\r\n"),
+                                  __FILET__,
+                                  __LINE__);
+#endif // DEBUG
+    }   
+    m_CriticalSection.Unlock();
+
+    return pfTargetFile;
+} //! CFileTransportManager::GetFileObject END
+
+
+
+BOOL CFileTransportManager::DeleteTaskAndFileObject(
+    CPath &ref_phFileNameWithPathDst)
+{
+#ifdef DEBUG
+    DWORD dwError = -1;
+    CString csErrorMessage;
+    DWORD dwLien = 0;
+#endif // DEBUG
+    BOOL bNoError = FALSE;
+    CFile *pfTargetFile = NULL;
+    PFILETRANSPORTTASK pstTask = NULL;
+
+    m_CriticalSection.Lock();
+    do
+    {
+        if (!m_mapFileObject.IsEmpty())
+        {
+            bNoError = m_mapFileObject.Lookup(ref_phFileNameWithPathDst,
+                                              pfTargetFile);
+            if (!bNoError)
+            {
+#ifdef DEBUG
+                OutputDebugStringWithInfo(_T("Don't found target file object."),
+                                          __FILET__,
+                                          __LINE__);
+#endif // DEBUG
+                break;
+            }
+
+            if (NULL != pfTargetFile)
+            {
+                pfTargetFile->Close();
+
+                delete pfTargetFile;
+                pfTargetFile = NULL;
+            }
+
+            bNoError = m_mapFileObject.RemoveKey(ref_phFileNameWithPathDst);
+            if (!bNoError)
+            {
+#ifdef DEBUG
+                dwLien = __LINE__;
+#endif // DEBUG
+                break;
+            }
+        }
+
+        if (!m_ctGetFileTaskInfo.IsEmpty())
+        {
+            POSITION posI = m_ctGetFileTaskInfo.GetHeadPosition();
+            while (posI)
+            {
+                POSITION posCurrently = posI;
+
+                pstTask = m_ctGetFileTaskInfo.GetNext(posI);
+                if (NULL != pstTask && 
+                    (pstTask->phFileNameWithPathDst_.m_strPath == 
+                    ref_phFileNameWithPathDst.m_strPath))
+                {
+                    delete pstTask;
+                    pstTask = NULL;
+                    m_ctGetFileTaskInfo.RemoveAt(posCurrently);
+                }
+            }
+        }
+
+        bNoError = TRUE;
+    } while (FALSE);
+    m_CriticalSection.Unlock();
+
+    return bNoError;
+} //! CFileTransportManager::DeleteTaskAndFileObject END
 
 void CFileTransportManager::Distroy()
 {
-    if (!m_mapGetFileTaskInfo.IsEmpty())
+    if (!m_ctGetFileTaskInfo.IsEmpty())
     {
-        POSITION posI = m_mapGetFileTaskInfo.GetStartPosition();
+        POSITION posI = m_ctGetFileTaskInfo.GetHeadPosition();
         CString csTmpKey;
         FILETRANSPORTTASK *pstTaskInfo = NULL; 
 
         while (posI)
         {
-            m_mapGetFileTaskInfo.GetNextAssoc(posI, csTmpKey, pstTaskInfo);
+            pstTaskInfo = m_ctGetFileTaskInfo.GetNext(posI);
 
             if (NULL != pstTaskInfo)
             {
@@ -114,6 +210,76 @@ void CFileTransportManager::Distroy()
             }
         }
 
-        m_mapGetFileTaskInfo.RemoveAll();
+        m_ctGetFileTaskInfo.RemoveAll();
     }
+
+    if (!m_mapFileObject.IsEmpty())
+    {
+        POSITION posI = m_mapFileObject.GetStartPosition();
+        CString csTmpKey;
+        CFile *pfFileObject = NULL;
+
+        while (posI)
+        {
+            m_mapFileObject.GetNextAssoc(posI, csTmpKey, pfFileObject);
+
+            if (NULL != pfFileObject)
+            {
+                delete pfFileObject;
+                pfFileObject = NULL;
+            }
+        }
+
+        m_mapFileObject.RemoveAll();
+    }
+
 } //! CFileTransportManager::Distroy END
+
+void CFileTransportManager::InsertFileDataToQueue(PFILEDATAINQUEUE pstFileData)
+{
+    m_CriticalSection.Lock();
+    m_queFileData.push(pstFileData);
+    m_CriticalSection.Unlock();
+}
+
+PFILEDATAINQUEUE CFileTransportManager::GetFileDataFromQueue()
+{
+    PFILEDATAINQUEUE pstFileData = NULL;
+    m_CriticalSection.Lock();
+    if (!m_queFileData.empty())
+    {
+        pstFileData = m_queFileData.front();
+        m_queFileData.pop();
+    }
+    else
+    {
+#ifdef DEBUG
+        OutputDebugStringWithInfo(_T("Want to get file data "
+                                     "but queue is empty.\r\n"), 
+                                  __FILET__, 
+                                  __LINE__);
+#endif // DEBUG
+    }
+    m_CriticalSection.Unlock();
+
+    return pstFileData;
+} //! CFileTransferDlg::GetFileDataFromQueue END
+
+
+BOOL CFileTransportManager::CheckFileDataQueueEmpty()
+{
+    m_CriticalSection.Lock();
+    BOOL bRet = m_queFileData.empty();
+    m_CriticalSection.Unlock();
+    if (bRet)
+    {
+#ifdef DEBUG
+        OutputDebugStringWithInfo(_T("No data in queue.\r\n"),
+                                  __FILET__,
+                                  __LINE__);
+#endif // DEBUG
+    }
+
+    return bRet;
+} //! CFileTransferDlg::CheckFileDataQueueEmpty END
+

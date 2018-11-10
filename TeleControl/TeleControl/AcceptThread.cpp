@@ -33,7 +33,7 @@ bool CAcceptThread::OnThreadEventRun(LPVOID lpParam)
         stClientAddrInfo.sin_family = AF_INET;
         int iSize = sizeof(stClientAddrInfo);
         SOCKET sctClientSocket = SOCKET_ERROR;
-        PCLIENTINFO pClientInfo = NULL;
+        PCLIENTINFO pstClientInfo = NULL;
         BOOL bHasError = FALSE;
 
         // 等待连接并记录信息及绑定IOCP
@@ -52,8 +52,8 @@ bool CAcceptThread::OnThreadEventRun(LPVOID lpParam)
             // 记录客户端信息
             // *注意* 该位置为CLIENTINFO对象申请的内存会在ClientManager结束
             // 或连接断开时进行释放
-            pClientInfo = new CLIENTINFO;
-            if (pClientInfo == NULL)
+            pstClientInfo = new CLIENTINFO;
+            if (pstClientInfo == NULL)
             {
 #ifdef DEBUG
                 OutputDebugString(_T("客户端信息申请内存失败\r\n"));
@@ -62,11 +62,11 @@ bool CAcceptThread::OnThreadEventRun(LPVOID lpParam)
                 break;
             }
 
-            pClientInfo->tLastTime_ = time(NULL);
-            pClientInfo->stClientAddrInfo_ = stClientAddrInfo;
-            pClientInfo->sctClientSocket_ = sctClientSocket;
-            pClientInfo->pFileTransferDlg_ = NULL;
-            pClientInfo->pCmdDlg_ = NULL;
+            pstClientInfo->tLastTime_ = time(NULL);
+            pstClientInfo->stClientAddrInfo_ = stClientAddrInfo;
+            pstClientInfo->sctClientSocket_ = sctClientSocket;
+            pstClientInfo->pFileTransferDlg_ = NULL;
+            pstClientInfo->pCmdDlg_ = NULL;
 
             CString csIPAndPort;
             // Change address and Port to wide character.
@@ -76,18 +76,18 @@ bool CAcceptThread::OnThreadEventRun(LPVOID lpParam)
                                ntohs(stClientAddrInfo.sin_port));
 
             // 将信息添加到客户端管理中
-            pClientManager->InsertClient(sctClientSocket, pClientInfo);
+            pClientManager->InsertClient(sctClientSocket, pstClientInfo);
             pClientManager->InsertSocket(csIPAndPort, sctClientSocket);
 
             // 界面显示新客户端的连接信息
             pHostListView->SendMessage(WM_HASINFOTOFLUSH,
                                        (WPARAM)IFT_ACCEPTCLIENT,
-                                       (LPARAM)pClientInfo);
+                                       (LPARAM)pstClientInfo);
 
             // 将客户端socket和IOCP绑定
             BOOL bRet =
                 pIOCP->Associate((HANDLE)sctClientSocket,
-                                 (ULONG_PTR)pClientInfo);
+                                 (ULONG_PTR)pstClientInfo);
             if (!bRet)
             {
                 OutputDebugString(_T("客户端Socket和IOCP绑定失败\r\n"));
@@ -114,10 +114,10 @@ bool CAcceptThread::OnThreadEventRun(LPVOID lpParam)
         }
 
         // Free the heap memory.
-        if (pClientInfo != NULL)
+        if (pstClientInfo != NULL)
         {
-            delete pClientInfo;
-            pClientInfo = NULL;
+            delete pstClientInfo;
+            pstClientInfo = NULL;
         }
     } // while 循环等待连接 END
 
