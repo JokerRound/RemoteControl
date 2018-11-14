@@ -8,14 +8,14 @@
 class CCommunicationIOCP
 {
 private:
-    HANDLE m_hIOCP;
-    HANDLE *m_phthdArray;
+    HANDLE m_hIOCP = NULL;
+    HANDLE *m_phthdArray = NULL;
     // 线程池最大线程数量
-    DWORD m_dwMaxThreadNum;
+    DWORD m_dwMaxThreadNum = 0;
     // 当前线程池中的数量
-    DWORD m_dwCurrentThreadNum;
+    DWORD m_dwCurrentThreadNum = 0;
     // 当前工作中的线程数量
-    DWORD m_dwBusyThreadNum;
+    DWORD m_dwBusyThreadNum = 0;
     // 临界区
     CCriticalSection m_CriticalSection;
     // 线程参数
@@ -30,7 +30,7 @@ public:
     // 绑定
     BOOL Associate(_In_ HANDLE hFileHandle,
                    _In_ ULONG_PTR pulCompletionKey = 0);
-    // 销毁
+    // Free resource.
     BOOL Destroy();
 
     // 线程工作回调
@@ -48,10 +48,12 @@ BOOL SendDataUseIOCP(_In_ CLIENTINFO *&ref_pstClientInfo,
                      _In_ CString &ref_csData,
                      _In_ PACKETTYPE ePacketType);
 
+
 BOOL SendDataUseIOCP(_In_ CLIENTINFO *&ref_pstClientInfo,
                      _In_ CCommunicationIOCP &ref_IOCP,
                      _In_ CString &ref_csData,
                      _In_ const DWORD &ref_dwSize,
                      _In_ CString &ref_csFileFullName,
-                     _In_ const ULONGLONG ullFilePointPos);
+                     _In_ const ULONGLONG &ref_ullFilePointPos,
+                     _In_ const ULONGLONG &ref_ullTaskId);
 #endif // !COMMUNICATIONIOCP_H_

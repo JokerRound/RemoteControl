@@ -7,11 +7,26 @@
 //
 // Modify Log:
 //      2018-11-10    Hoffman
-//      Info: Modify for below mehod.
-//              UpdateTransportList: Add DstFile and SrcFile columns.
-//              OnNMDblclkLstServerFilelist: Optimization for deal whith path.
-//              OnFiledlgupdate: Modify flush list control ability.
+//      Info: Modify achieve of below methods.
+//              UpdateTransportList(): 
+//                  1. Add DstFile and SrcFile columns.
+//              OnNMDblclkLstServerFilelist(): 
+//                  1. Optimization for deal whith path.
+//              OnFiledlgupdate(): 
+//                  1. Modify flush list control ability.
 //
+//      2018-11-13    Hoffman
+//      Info: Midify achieve of below methods.
+//              OnBnClickedBtnGetfile(): 
+//                  1. Initional the destination file name.
+//
+//      2018-11-14    Hoffman
+//      Info: Midify achieve of below methods.
+//              OnFiledlgupdate(): 
+//                  1. Modify deal with it had occured error.
+//                  2. Add deal with for FDUT_ERROR
+//              OnBnClickedBtnGetfile(): 
+//                  1. Modify deal with get uniq file name.
 //******************************************************************************
 
 #include "stdafx.h"
@@ -643,19 +658,12 @@ void CFileTransferDlg::ChangeListStyle(CListCtrl &ref_lstTarget,
         return;
     }
 
-    DWORD adwStyle[4] = {
-        LVS_ICON,
-        LVS_SMALLICON,
-        LVS_LIST,
-        LVS_REPORT,
-    };
-
     // Modify style of list control.
-    DWORD dwAddStyle = adwStyle[iNewIndex];
+    DWORD dwAddStyle = m_adwStyle[iNewIndex];
     DWORD dwRemoveStyle = 0;
     if (iOldIndex != -1)
     {
-        dwRemoveStyle = adwStyle[iOldIndex];
+        dwRemoveStyle = m_adwStyle[iOldIndex];
     }
 
     ref_lstTarget.ModifyStyle(dwRemoveStyle, dwAddStyle, TRUE);
@@ -795,6 +803,8 @@ void CFileTransferDlg::OnNMDblclkLstServerFilelist(NMHDR *pNMHDR,
 }
 
 
+// Deal with the message user change style use 
+// the server list style combox control.
 void CFileTransferDlg::OnCbnSelchangeCmbServerFilelistStyle()
 {
     int iIndex = m_cmbServerFileListStyle.GetCurSel();
@@ -802,7 +812,7 @@ void CFileTransferDlg::OnCbnSelchangeCmbServerFilelistStyle()
                     m_iServerActiveStyleIdx,
                     m_iServerActiveStyleIdx,
                     iIndex);
-}
+} //! CFileTransferDlg::OnCbnSelchangeCmbServerFilelistStyle END
 
 
 // Deal with show filelist when ComboBox is change
@@ -817,24 +827,27 @@ void CFileTransferDlg::OnCbnSelchangeCmbServerDriver()
                  m_iServerActiveStyleIdx);
 } //! CFileTransferDlg::OnCbnSelchangeCmbServerDevice END
 
-// Deal with
+// Deal with the message user change style use 
+// the target host list style combox control.
 void CFileTransferDlg::OnCbnSelchangeCmbTargethostFilelistStyle()
 {
-    // TODO: 在此添加控件通知处理程序代码
-    
-}
+    int iIndex = m_cmbTargetHostFileListStyle.GetCurSel();
+    ChangeListStyle(m_lstTargetHostFileList,
+                    m_iTargetHostActiveStyleIdx,
+                    m_iTargetHostActiveStyleIdx,
+                    iIndex);
+} //! CFileTransferDlg::OnCbnSelchangeCmbTargethostFilelistStyle END
 
 // Deal with show filelist when ComboBox is change
 // that device of target host.
 void CFileTransferDlg::OnCbnSelchangeCmbTargethostDriver()
 {
-    //m_edtTargetHostFilePath.SetWindowText(_T(""));
+    int iIdx = m_cmbServerDriver.GetCurSel();
+    m_cmbServerDriver.GetLBText(iIdx, m_phServerFilePath);
 
-    //ShowFileList(m_lstTargetHostFileList,
-    //             m_cmbTargetHostDriver,
-    //             m_edtTargetHostFilePath,
-    //             m_iTargetHostActiveStyleIdx);
-}
+    ShowFileList(m_lstTargetHostFileList,
+                 m_iTargetHostActiveStyleIdx);
+} //! CFileTransferDlg::OnCbnSelchangeCmbTargethostDriver END
 
 // Deal with click the 'go' button of target host.
 void CFileTransferDlg::OnBnClickedBtnTargethostSkip()
@@ -852,22 +865,30 @@ void CFileTransferDlg::OnBnClickedBtnTargethostSkip()
 // Deal with click the '<' button.
 void CFileTransferDlg::OnBnClickedBtnGetfile()
 {
-    // Format: "FilePath?FileName|FileName|..."
+#ifdef DEBUG
+    DWORD dwError = -1;
+    CString csErrorMessage;
+    DWORD dwLine = 0;
+    BOOL bOutputErrMsg = FALSE;
+#endif // DEBUG
+    // Format: "FilePath?FileName:pos:id|FileName:pos:id|..."
     CString csFilesListSendToTargetHost;
+    BOOL bRet = FALSE;
 
-    // Get name of files need to downlord, and add mission to task manager.
-    POSITION posI = m_lstTargetHostFileList.GetFirstSelectedItemPosition();
-    if (NULL == posI)
+    do
     {
+        // Get name of files need to downlord, and add mission to task manager.
+        POSITION posI = m_lstTargetHostFileList.GetFirstSelectedItemPosition();
+        if (NULL == posI)
+        {
+            break;
+        }
 
-    }
-    else
-    {
         CString csFileName;
         CString csFileSize;
 
         // Get full path.
-        CPath phFileNameWithPath = m_phTartetHostFilePath;
+        CPath phFileNameWithPathSrc = m_phTartetHostFilePath;
 
         csFilesListSendToTargetHost = m_phTartetHostFilePath + _T("?");
 
@@ -878,38 +899,77 @@ void CFileTransferDlg::OnBnClickedBtnGetfile()
 
             csFileName =
                 m_lstTargetHostFileList.GetItemText(iItemIndex, FLCT_FILENAME);
-            csFileSize = 
+            csFileSize =
                 m_lstTargetHostFileList.GetItemText(iItemIndex, FLCT_FILESIZE);
 
-            phFileNameWithPath.Append(csFileName);
+            phFileNameWithPathSrc.Append(csFileName);
 
             // Insert file name into send list.
-            csFilesListSendToTargetHost += csFileName + _T(":0") + _T("|");
+            TCHAR szTaskId[MAXBYTE] = { 0 };
+ 
+            csFilesListSendToTargetHost +=
+                csFileName + _T(":0") + _T(":") + 
+                _ui64tow(m_ullNextTaskId, szTaskId, 10) + _T("|");
+
 
             //*************************************
             //*ALARM* This memory will free when manager distroy.
             //*************************************
             PFILETRANSPORTTASK pstTaskInfo = new FILETRANSPORTTASK;
-            pstTaskInfo->phFileNameWithPathSrc_ = phFileNameWithPath;
+            pstTaskInfo->phFileNameWithPathSrc_ = phFileNameWithPathSrc;
             pstTaskInfo->eTaskType_ = FTT_GETFILE;
             pstTaskInfo->ullFileTotalSize_ = _ttoi(csFileSize);
             pstTaskInfo->ullTransmissionSize_ = 0;
             pstTaskInfo->eTaskStatus_ = FTS_PAUSE;
+            pstTaskInfo->ullId_ = m_ullNextTaskId++;
+            pstTaskInfo->phFileNameWithPathDst_ = phFileNameWithPathSrc;
+
+            // Check file exist or not.
+            if (pstTaskInfo->phFileNameWithPathDst_.FileExists())
+            {
+                // Create uniq name.
+                CPath phUniqFileNameWithPath;
+                CPath phFileNameDst = pstTaskInfo->phFileNameWithPathDst_;
+                CPath phFilePathDst = pstTaskInfo->phFileNameWithPathDst_;
+                phFileNameDst.StripPath();
+                phFilePathDst.RemoveFileSpec();
+
+
+                TCHAR szUniqFileNameWithPath[MAX_PATH] = { 0 };
+                bRet = PathYetAnotherMakeUniqueName(szUniqFileNameWithPath,
+                                                    phFilePathDst,
+                                                    NULL,
+                                                    phFileNameDst);
+                if (!bRet)
+                {
+#ifdef DEBUG
+                    dwError = GetLastError();
+                    GetErrorMessage(dwError, csErrorMessage);
+                    OutputDebugStringWithInfo(csErrorMessage,
+                                              __FILET__,
+                                              __LINE__);
+#endif // DEBUG 
+                    continue;
+                }
+
+                pstTaskInfo->phFileNameWithPathDst_ =
+                    szUniqFileNameWithPath;
+            }
 
             // Add task to manager.
-            m_TransportTaskManager.InsertGetFileTask(phFileNameWithPath,
+            m_TransportTaskManager.InsertGetFileTask(phFileNameWithPathSrc,
                                                      pstTaskInfo);
         } // while "Traversing Item" END
-    } //! if "Item is selected" END
 
-    UpdateTransportList();
-    
-    // Send file command and file list to target host.
-    SendDataUseIOCP(m_pstClientInfo,
-                    m_ref_IOCP,
-                    csFilesListSendToTargetHost,
-                    PT_FILECOMMAND_GETFILE);
+        UpdateTransportList();
 
+        // Send file command and file list to target host.
+        SendDataUseIOCP(m_pstClientInfo,
+                        m_ref_IOCP,
+                        csFilesListSendToTargetHost,
+                        PT_FILECOMMAND_GETFILE);
+
+    } while (FALSE);
 } //! CFileTransferDlg::OnBnClickedBtnGetfile END
 
 
@@ -1011,6 +1071,12 @@ afx_msg LRESULT CFileTransferDlg::OnHasfiledata(WPARAM wParam, LPARAM lParam)
 // Deal with WM_FILEDLGUPDATE message.
 afx_msg LRESULT CFileTransferDlg::OnFiledlgupdate(WPARAM wParam, LPARAM lParam)
 {
+#ifdef DEBUG
+    DWORD dwError = -1;
+    CString csErrorMessage;
+    DWORD dwLine = 0;
+    BOOL bOutputErrMsg = FALSE;
+#endif // DEBUG
     BOOL bNoError = FALSE;
 
     do
@@ -1030,26 +1096,25 @@ afx_msg LRESULT CFileTransferDlg::OnFiledlgupdate(WPARAM wParam, LPARAM lParam)
 
         FILEDLGUPDATETYPE eUpdateType = (FILEDLGUPDATETYPE)lParam;
 
+        // Get index.
+        int iIdx = 0;
+        while (iIdx < m_lstTransferTaskList.GetItemCount())
+        {
+            if (pstTaskInfo->phFileNameWithPathDst_.m_strPath ==
+                m_lstTransferTaskList.GetItemText(
+                    iIdx,
+                    FTLC_DSTFILE))
+            {
+                break;
+            }
+
+            ++iIdx;
+        }
+
         switch (eUpdateType)
         {
             case FDUT_TASKINFO:
             {
-
-                // Get index.
-                int iIdx = 0;
-                while (iIdx < m_lstTransferTaskList.GetItemCount())
-                {
-                    if (pstTaskInfo->phFileNameWithPathDst_.m_strPath ==
-                        m_lstTransferTaskList.GetItemText(
-                            iIdx,
-                            FTLC_DSTFILE))
-                    {
-                        break;
-                    }
-
-                    ++iIdx;
-                }
-
                 // Update the already transmitted size.
                 CString csTransmittedSize;
                 _ui64tot(pstTaskInfo->ullTransmissionSize_,
@@ -1085,14 +1150,28 @@ afx_msg LRESULT CFileTransferDlg::OnFiledlgupdate(WPARAM wParam, LPARAM lParam)
                 if (!bNoError)
                 {
 #ifdef DEBUG
-                    OutputDebugStringWithInfo(_T("Modify task status "
-                                                 "failed.\r\n"),
-                                              __FILET__,
-                                              __LINE__);
+                    dwLine = __LINE__;
+                    bOutputErrMsg = TRUE;
 #endif // DEBUG
                 }
 
-                UpdateData();
+                break;
+            } //! case "FDUT_TASKINFO" END
+            case FDUT_ERROR:
+            {
+                bNoError =
+                    m_lstTransferTaskList.SetItemText(
+                        iIdx,
+                        FTLC_TASKSTATUS,
+                        m_acsTaskStatus[pstTaskInfo->eTaskStatus_]);
+                if (bNoError)
+                {
+#ifdef DEBUG
+                    dwLine = __LINE__;
+                    bOutputErrMsg = TRUE;
+#endif // DEBUG
+                }
+
                 break;
             }
             default:
@@ -1102,9 +1181,19 @@ afx_msg LRESULT CFileTransferDlg::OnFiledlgupdate(WPARAM wParam, LPARAM lParam)
         }
     } while (FALSE);
 
+
+#ifdef DEBUG
+    if (bOutputErrMsg && 0 != dwLine)
+    {
+        dwError = GetLastError();
+        GetErrorMessage(dwError, csErrorMessage);
+        OutputDebugStringWithInfo(csErrorMessage, __FILET__, dwLine);
+    }
+#endif // DEBUG
+
+    UpdateData();
     return 0;
 } //! CFileTransferDlg::OnFiledlgupdate END
-
 
 void CFileTransferDlg::OnDestroy()
 {

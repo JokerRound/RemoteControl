@@ -105,6 +105,7 @@ typedef struct tagPacketFormat
     DWORD           dwSize_;
     TCHAR           szFileFullName_[MAX_PATH + sizeof(TCHAR)];
     ULONGLONG       ullFilePointPos_;
+    ULONGLONG       ullTaskId_;
     char            szContent_[1];
 } PACKETFORMAT, *PPACKETFORMAT;
 #pragma pack(pop)

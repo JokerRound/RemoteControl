@@ -7,7 +7,8 @@
 //
 // Modify Log:
 //    2018-10-24    Hoffman
-//      Info: Add "SendDataUseIOCP" function achieve.
+//      Info: Add achieve of below member method.
+//              SendDataUseIOCP();
 //******************************************************************************
 
 #include "stdafx.h"
@@ -18,8 +19,6 @@
 #include "TeleClientDlg.h"
 
 CCommunicationIOCP::CCommunicationIOCP()
-    : m_hIOCP(NULL)
-    , m_phthdArray(NULL)
 {
 }
 
@@ -407,7 +406,8 @@ BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
                      CString &ref_csData,
                      const DWORD &ref_dwSize,
                      CString &ref_csFileFullName,
-                     const ULONGLONG ullFilePointPos)
+                     const ULONGLONG &ref_ullFilePointPos,
+                     const ULONGLONG &ref_ullTaskId)
 {
     PPACKETFORMAT pstPacket = 
         (PPACKETFORMAT)ref_pstClientInfo->szSendTmpBuffer_;
@@ -422,7 +422,8 @@ BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
     memmove(pstPacket->szFileFullName_,
             ref_csFileFullName.GetBuffer(),
             MAX_PATH); 
-    pstPacket->ullFilePointPos_ = ullFilePointPos;
+    pstPacket->ullFilePointPos_ = ref_ullFilePointPos;
+    pstPacket->ullTaskId_ = ref_ullTaskId;
 
     // Copy
     memmove(pstPacket->szContent_,

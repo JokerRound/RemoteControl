@@ -1,3 +1,19 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-07-24
+// Description: 
+//      The define for class CClientManager.
+//
+// Modify Log:
+//      2018-07-24    Hoffman
+//      Info: Add below member variables.
+//              m_mapClient;
+//              m_mapIPPortWithSocket;
+//              m_CriticalSection;
+//            Add below member methods.
+//              InserClient();
+//******************************************************************************
 
 #pragma once
 #ifndef CLIENTMANAGER_H_
@@ -12,7 +28,7 @@ private:
     CMap<SOCKET, SOCKET, tagClientInfo *, tagClientInfo *> m_mapClient;
     // Binding SOCKET with IP and port. 
     CMap<CString, LPCTSTR, SOCKET, SOCKET> m_mapIPPortWithSocket;
-    // 
+
     CCriticalSection m_CriticalSection;
 public:
     CClientManager();

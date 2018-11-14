@@ -7,10 +7,15 @@
 //
 // Modify Log:
 //      2018-11-10    Hoffman
-//      Info: Move achieve of method below from FileTransferDlg.cpp.
-//              InsertFileDataToQueue
-//              GetFileDataFromQueue
-//              CheckFileDataQueueEmpty
+//      Info: Move achieve of below methods from FileTransferDlg.cpp.
+//              InsertFileDataToQueue();
+//              GetFileDataFromQueue();
+//              CheckFileDataQueueEmpty();
+//
+//      2018-11-13    Hoffman
+//      Info: Modify achieve of below member methods.
+//            Add ahcieve of below member method.
+//              GetTask(): overload by id.
 //******************************************************************************
 
 #include "stdafx.h"
@@ -47,7 +52,7 @@ void CFileTransportManager::InsertGetFileTask(const CString csFileFullName,
 
 
 FILETRANSPORTTASK *CFileTransportManager::GetTask(
-    CPath &ref_phFileNameWithPathDst)
+    const CPath &ref_phFileNameWithPathDst)
 {
     FILETRANSPORTTASK *pstTargetTask = NULL;
 
@@ -60,6 +65,28 @@ FILETRANSPORTTASK *CFileTransportManager::GetTask(
         if (NULL != pstTargetTask &&
             pstTargetTask->phFileNameWithPathDst_.m_strPath ==
             ref_phFileNameWithPathDst.m_strPath)
+        {
+            break;
+        }
+    }
+
+    m_CriticalSection.Unlock();
+    return pstTargetTask;
+} //! CFileTransportManager::GetTask END
+
+// Traversing the chain table for founding the target task by id.
+FILETRANSPORTTASK *CFileTransportManager::GetTask(const ULONGLONG &ref_dwTaskId)
+{
+    FILETRANSPORTTASK *pstTargetTask = NULL;
+
+    m_CriticalSection.Lock();
+    POSITION posI = m_ctGetFileTaskInfo.GetHeadPosition();
+
+    while (posI)
+    {
+        pstTargetTask = m_ctGetFileTaskInfo.GetNext(posI);
+        if (NULL != pstTargetTask &&
+            pstTargetTask->ullId_ == ref_dwTaskId)
         {
             break;
         }

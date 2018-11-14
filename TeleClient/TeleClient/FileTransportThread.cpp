@@ -43,7 +43,7 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
     // Get every filename.
     std::basic_string<TCHAR> strFileList = csFileListToGet.GetString();
     std::match_results<const TCHAR*> sMatchResult;
-    std::basic_regex<TCHAR> Rgx(_T("(.*)?:(.*)?\\|"));
+    std::basic_regex<TCHAR> Rgx(_T("(.*)?:(.*)?:(.*)?\\|"));
 
     bool bRet = false;
 
@@ -66,7 +66,14 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
 
         std::basic_string<TCHAR> strFileName = sMatchResult[1];
         ULONGLONG ullFileTransportStartPos = 
-            _ttoi(((std::basic_string<TCHAR>)sMatchResult[2]).c_str());
+            _tcstoui64(((std::basic_string<TCHAR>)sMatchResult[2]).c_str(),
+                       NULL, 
+                       10);
+        ULONGLONG ullTaskId =
+            _tcstoui64(((std::basic_string<TCHAR>)sMatchResult[3]).c_str(), 
+                       NULL,
+                       10);
+        std::basic_string<TCHAR> strTaskId = sMatchResult[3];
 
         phFileNameWithPath.Append(strFileName.c_str());
         CFile fTargetFile;
@@ -117,7 +124,8 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
                                        csDataBlock,
                                        dwSize,
                                        phFileNameWithPath,
-                                       fTargetFile.GetPosition());
+                                       fTargetFile.GetPosition(),
+                                       ullTaskId);
                 if (!bRet)
                 {
 #ifdef DEBUG

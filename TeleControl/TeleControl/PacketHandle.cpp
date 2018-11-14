@@ -101,6 +101,7 @@ BOOL OnFileData(SOCKET sctTargetSocket,
     // Get file name and postion.
     pstFileData->phFileNameWithPath_ = ref_stHeader.szFileFullName_;
     pstFileData->ullFilePointPos_ = ref_stHeader.ullFilePointPos_;
+    pstFileData->ullTaskId_ = ref_stHeader.ullTaskId_;
 
     // Wirte file data to buffer object.
     pstFileData->FileDataBuffer_.Write((PBYTE)szBuffer, ref_stHeader.dwSize_);

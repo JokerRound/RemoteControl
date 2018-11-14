@@ -1,3 +1,20 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-07-24
+// Description: 
+//      The define for class CFileTransforDlg.
+//
+// Modify Log:
+//      2018-11-13    Hoffman
+//      Info: Add below member variable.
+//              m_ullNextTaskId;
+//
+//      2018-11-14    Hoffman
+//      Info: Add below member variable.
+//              m_adwStyle;
+//******************************************************************************
+
 #pragma once
 #include "afxwin.h"
 #include "afxcmn.h"
@@ -34,6 +51,9 @@ private:
     // Client context.
     PCLIENTINFO m_pstClientInfo = NULL;
 
+    // The id for next task.
+    ULONGLONG m_ullNextTaskId = 0;
+
     // Thread recevie file data.
     CRecvFileDataThread *m_pthdRecvFileData = NULL;
     BOOL m_bProcessQuit = FALSE;
@@ -64,6 +84,13 @@ private:
     CEdit *m_apedtPath[NUM_PARTICIPANT] = {
         &m_edtServerFilePath,
         &m_edtTargetHostFilePath
+    };
+
+    DWORD m_adwStyle[4] = {
+        LVS_ICON,
+        LVS_SMALLICON,
+        LVS_LIST,
+        LVS_REPORT,
     };
     void FreeResource();
     void UpdateTransportList();

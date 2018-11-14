@@ -1,3 +1,17 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-10-15
+// Description: 
+//      Declares of assist function.
+//
+// Modify Log:
+//      2018-10-15    Hoffman
+//      Info: Add declares of below functions.
+//              OutputDebugStringWithInfo();
+//              GetErrorMessage();
+//******************************************************************************
+
 #pragma once
 #ifndef ASSISTFUNC_H_
 #define ASSISTFUNC_H_

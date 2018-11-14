@@ -22,6 +22,7 @@ typedef struct tagFileDataInQueue
 {
     CPath       phFileNameWithPath_;
     ULONGLONG   ullFilePointPos_;
+    ULONGLONG   ullTaskId_;
     CBuffer     FileDataBuffer_;
 } FILEDATAINQUEUE, *PFILEDATAINQUEUE;
 
@@ -69,12 +70,14 @@ typedef struct tagFileTransportTask
     ULONGLONG           ullFileTotalSize_ = 0;
     ULONGLONG           ullTransmissionSize_ = 0;
     FILETASKSTATUS      eTaskStatus_;
+    ULONGLONG           ullId_;
     int                 iIdxInTaskList_;
 } FILETRANSPORTTASK, *PFILETRANSPORTTASK;
 
 typedef enum tagFileDlgUpdateType
 {
     FDUT_TASKINFO,
+    FDUT_ERROR,
 } FILEDLGUPDATETYPE, *PFileDlgUpdateType;
 
 #endif // !FILETRANSFERSTRUCT_H_
