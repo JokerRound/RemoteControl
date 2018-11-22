@@ -131,7 +131,11 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
             {
                 if (dwError == WAIT_TIMEOUT)
                 {
-                    csFailedInfo = _T("µÈ´ý³¬Ê±\r\n");
+#ifdef DEBUG
+                    OutputDebugStringWithInfo(_T("Wait outtime."),
+                                              __FILET__,
+                                              __LINE__);
+#endif // DEBUG
                 }
                 else
                 {
@@ -218,7 +222,6 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
                                    stTmpHeader,
                                    pstClientInfo,
                                    *pIOCP);
-
                 } //! while "Recevie loop" END
 
                 // Post new recv request.
@@ -362,7 +365,7 @@ BOOL CCommunicationIOCP::PostRecvRequst(const SOCKET sctTarget)
 // Package the process that send data.
 BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
                      CCommunicationIOCP &ref_IOCP,
-                     CString &ref_csData,
+                     const CString &ref_csData,
                      PACKETTYPE ePacketType)
 {
     PPACKETFORMAT pstPacket =
@@ -377,7 +380,7 @@ BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
     pstPacket->dwSize_ = (ref_csData.GetLength() + 1) * sizeof(TCHAR);
 
     memmove(pstPacket->szContent_,
-            ref_csData.GetBuffer(),
+            ref_csData.GetString(),
             pstPacket->dwSize_);
 
     ref_pstClientInfo->SendBuffer_.Write(

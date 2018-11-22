@@ -14,7 +14,7 @@ private:
     PCLIENTINFO m_pstClientInfo;
     CCommunicationIOCP &m_ref_IOCP;
 
-    // 发送命令给远程主机的事件
+    // The event for has command need to send to target host.
     HANDLE m_hSendCommandEvent = NULL;
 
 
@@ -44,4 +44,7 @@ public:
 protected:
     afx_msg LRESULT OnHascmdreply(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT OnHasordertosend(WPARAM wParam, LPARAM lParam);
+public:
+    afx_msg void OnClose();
+    afx_msg void OnDestroy();
 };

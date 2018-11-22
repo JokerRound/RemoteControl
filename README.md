@@ -2,7 +2,7 @@
 ## License: MIT
 ## Dev Environment: VS2017
 ## Ability
-- CMD.（profecting..）
+- CMD.（Ability ok, may be have bug or not...）
 - File transmission.（profecting..）
 1、Support download file now, (upload file is profecting...)
 

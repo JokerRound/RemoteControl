@@ -1,3 +1,25 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-07-24
+// Description: 
+//      The functinos achieve for deal with package from target host.
+//
+// Modify Log:
+//      2018-07-24    Hoffman
+//      Info: Add below functions.
+//              OnHeartBeat();
+//              OnHandlePacket();
+//              
+//      2018-11-22    Hoffman
+//      Info: Modify below functions.
+//              OnCMDReply(): 
+//                  1. Add check for cmd dialog point.
+//              OnHandlePacket(): 
+//                  1. Modify some debug info output.
+//              
+//******************************************************************************
+
 #include "stdafx.h"
 #include "StructShare.h"
 #include "FileTransferDlg.h"
@@ -12,27 +34,6 @@ BOOL OnHeartBeat(SOCKET sctTargetSocket,
                  PCLIENTINFO pstClientInfo,
                  CCommunicationIOCP &IOCP)
 {
-    //PPACKETFORMAT pstPacket = (PPACKETFORMAT)pstClientInfo->szSendTmpBuffer_;
-
-    //// *注意* 写入数据时要加锁
-    //pstClientInfo->CriticalSection_.Lock();
-    //pstPacket->ePacketType_ = PT_HEARTBEAT;
-    //pstPacket->dwSize_ = 0;
-
-    //pstClientInfo->SendBuffer_.Write((PBYTE)pstClientInfo->szSendTmpBuffer_,
-    //                                 PACKET_HEADER_SIZE + pstPacket->dwSize_);
-    //// 清空临时发送区
-    //memset(pstClientInfo->szSendTmpBuffer_,
-    //       0,
-    //       PACKET_HEADER_SIZE + pstPacket->dwSize_);
-
-    //// 投递发送请求
-    //BOOL bRet = IOCP.PostSendRequst(sctTargetSocket,
-    //                                pstClientInfo->SendBuffer_);
-
-    //pstClientInfo->SendBuffer_.ClearBuffer();
-    //pstClientInfo->CriticalSection_.Unlock();
-
     CString csTmpData;
     BOOL bRet = SendDataUseIOCP(pstClientInfo, IOCP, csTmpData, PT_HEARTBEAT);
 
@@ -130,12 +131,14 @@ BOOL OnCMDReply(SOCKET sctTargetSocket,
 
     memset(szBuffer, 0, uiLen);
 
-    BOOL bRet = 
+    if (NULL != pstClintInfo->pCmdDlg_)
+    {
         pstClintInfo->pCmdDlg_->SendMessage(WM_HASCMDREPLY,
                                             (WPARAM)&csCmdReply,
                                             0);
+    }
 
-    return bRet;
+    return TRUE;
 }
 
 // Deal with the info from target host.

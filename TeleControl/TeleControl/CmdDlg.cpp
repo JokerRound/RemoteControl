@@ -1,3 +1,28 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-07-24
+// Description: 
+//      Achieve of class CCmdDlg's member method.
+//
+// Modify Log:
+//      2018-07-24    Hoffman
+//      Info: a. Add below functions.
+//              a.1 OnHascmdreply();
+//              a.2 OnHasordertosend();
+//              
+//      2018-11-22    Hoffman
+//      Info: a. Modify below functions.
+//              a.1 OnHasordertosend():
+//                  1.1 Use SendDataUseIOCP functions to instead of 
+//                     send code segment.
+//              a.2 OnHascmdreply():
+//                  1.2 Add check screen tail has "\r\n" or not.
+//            b. Add below functions.
+//              b.1 OnClose();
+//              b.2 OnDestroy();
+//******************************************************************************
+
 // CmdDlg.cpp : 实现文件
 //
 
@@ -37,6 +62,8 @@ void CCmdDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CCmdDlg, CDialogEx)
     ON_MESSAGE(WM_HASCMDREPLY, &CCmdDlg::OnHascmdreply)
     ON_MESSAGE(WM_HASORDERTOSEND, &CCmdDlg::OnHasordertosend)
+    ON_WM_CLOSE()
+    ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -82,6 +109,12 @@ BOOL CCmdDlg::OnInitDialog()
 afx_msg LRESULT CCmdDlg::OnHascmdreply(WPARAM wParam, LPARAM lParam)
 {
     CString *pcsCmdReply = (CString *)wParam;
+
+    if (m_csScreen.Right(2) != _T("\r\n"))
+    {
+        m_csScreen += _T("\r\n");
+    }
+
     m_csScreen += *pcsCmdReply;
 
     m_edtCmd.SetWindowText(m_csScreen);
@@ -100,37 +133,71 @@ afx_msg LRESULT CCmdDlg::OnHasordertosend(WPARAM wParam, LPARAM lParam)
 {
     CString *csOreder = (CString *)wParam;
 
-    // 发送命令给目标服务器
-    // 投递Send请求，开启对端的CMD
     PPACKETFORMAT pstPacket =
         (PPACKETFORMAT)m_pstClientInfo->szSendTmpBuffer_;
 
-    // *注意* 写入数据时要加锁
-    m_pstClientInfo->CriticalSection_.Lock();
-    pstPacket->ePacketType_ = PT_CMD_ORDER;
+    SendDataUseIOCP(m_pstClientInfo,
+                    m_ref_IOCP,
+                    *csOreder,
+                    PT_CMD_ORDER);
 
-    pstPacket->dwSize_ = (csOreder->GetLength() + 1) * sizeof(TCHAR);
-    memmove(pstPacket->szContent_,
-            csOreder->GetBuffer(),
-            pstPacket->dwSize_);
+    //// *注意* 写入数据时要加锁
+    //m_pstClientInfo->CriticalSection_.Lock();
+    //pstPacket->ePacketType_ = PT_CMD_ORDER;
+
+    //pstPacket->dwSize_ = (csOreder->GetLength() + 1) * sizeof(TCHAR);
+    //memmove(pstPacket->szContent_,
+    //        csOreder->GetBuffer(),
+    //        pstPacket->dwSize_);
 
 
-    m_pstClientInfo->SendBuffer_.Write(
-        (PBYTE)m_pstClientInfo->szSendTmpBuffer_,
-        PACKET_HEADER_SIZE + pstPacket->dwSize_);
+    //m_pstClientInfo->SendBuffer_.Write(
+    //    (PBYTE)m_pstClientInfo->szSendTmpBuffer_,
+    //    PACKET_HEADER_SIZE + pstPacket->dwSize_);
 
-    // 清理发送临时缓冲区
-    memset(m_pstClientInfo->szSendTmpBuffer_,
-           0,
-           PACKET_HEADER_SIZE + pstPacket->dwSize_);
+    //// 清理发送临时缓冲区
+    //memset(m_pstClientInfo->szSendTmpBuffer_,
+    //       0,
+    //       PACKET_HEADER_SIZE + pstPacket->dwSize_);
 
-    // 投递发送请求
-    BOOL bRet =
-        m_ref_IOCP.PostSendRequst(m_pstClientInfo->sctClientSocket_,
-                                  m_pstClientInfo->SendBuffer_);
+    //// 投递发送请求
+    //BOOL bRet =
+    //    m_ref_IOCP.PostSendRequst(m_pstClientInfo->sctClientSocket_,
+    //                              m_pstClientInfo->SendBuffer_);
 
-    m_pstClientInfo->SendBuffer_.ClearBuffer();
-    m_pstClientInfo->CriticalSection_.Unlock();
+    //m_pstClientInfo->SendBuffer_.ClearBuffer();
+    //m_pstClientInfo->CriticalSection_.Unlock();
     
     return 0;
+}
+
+
+void CCmdDlg::OnClose()
+{
+    // Send close to target host.
+    BOOL bRet = SendDataUseIOCP(m_pstClientInfo,
+                                m_ref_IOCP,
+                                NULL,
+                                PT_CMDCOMMAND_END);
+    if (!bRet)
+    {
+#ifdef DEBUG
+        OutputDebugStringWithInfo(_T("Send PT_CMDCOMMAND_END faild.\r\n"),
+                                  __FILET__,
+                                  __LINE__);
+#endif // DEBUG
+    }
+
+    CDialogEx::OnClose();
+    DestroyWindow();
+} //! CCmdDlg::OnClose END
+
+
+void CCmdDlg::OnDestroy()
+{
+    CDialogEx::OnDestroy();
+
+    GetParent()->SendMessage(WM_HASDLGCLOSE,
+                             (WPARAM)m_pstClientInfo,
+                             CDT_CMD);
 }

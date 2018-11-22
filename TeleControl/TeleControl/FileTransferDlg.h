@@ -71,9 +71,9 @@ private:
         _T("Finish")
     };
 
-    CPath *m_apphFilePath[NUM_PARTICIPANT] = {
-        &m_phServerFilePath,
-        &m_phTartetHostFilePath
+    CPath *m_appathFilePath[NUM_PARTICIPANT] = {
+        &m_pathServerFilePath,
+        &m_pathTartetHostFilePath
     };
 
     PFNC_CLICKBTNSKIP m_apfncClickBtnSkip[NUM_PARTICIPANT] = {
@@ -124,7 +124,7 @@ public:
     // The edit control of server's path.
     CEdit m_edtServerFilePath;
     // The path object of server.
-    CPath m_phServerFilePath;
+    CPath m_pathServerFilePath;
     // The file list of target host.
     CString m_csTargetHostFileList;
     // The driver list of target host.
@@ -145,7 +145,7 @@ public:
     // The edit control of target host's path.
     CEdit m_edtTargetHostFilePath;
     // The path object of target host.
-    CPath m_phTartetHostFilePath;
+    CPath m_pathTartetHostFilePath;
 
     // The manager of task transmission.
     CFileTransportManager m_TransportTaskManager;

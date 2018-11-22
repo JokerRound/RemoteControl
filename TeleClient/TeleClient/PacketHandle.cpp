@@ -1,3 +1,21 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-07-24
+// Description: 
+//      The functions achieve for deal with package from server.
+//
+// Modify Log:
+//      2018-07-24    Hoffman
+//      Info: Add below functions.
+//              OnHandlePacket();
+//
+//      2018-11-22    Hoffman
+//      Info: Modify below functions.
+//              OnCMDOrder(): 
+//                  1. Add order content check.
+//******************************************************************************
+
 #include "stdafx.h"
 #include "CommunicationIOCP.h"
 #include "TeleClientDlg.h"
@@ -258,12 +276,11 @@ BOOL OnGetFileCommand(SOCKET sctTargetSocket,
     // Clean the temporary buffer of revice.
     memset(szBuffer, 0, uiLen);
 
-    BOOL bRet = 
-        pstClientInfo->pTeleClientDlg_->SendMessage(WM_GETFILE, 
-                                                    (WPARAM)&csFileListToGet,
-                                                    (LPARAM)pstClientInfo);
+    pstClientInfo->pTeleClientDlg_->SendMessage(WM_GETFILE,
+                                                (WPARAM)&csFileListToGet,
+                                                (LPARAM)pstClientInfo);
 
-    return bRet;
+    return TRUE;
 
 } //! OnGetFileCommand END
 
@@ -286,15 +303,18 @@ BOOL OnCmdCommandStart(PCLIENTINFO  pstClientInfo)
                           &pstClientInfo->hServerCmdWritePipe_,
                           &stSa,
                           0);
-        if (bRet == FALSE)
+        if (!bRet)
         {
 #ifdef DEBUG
-            OutputDebugString(_T("管道创建失失败\r\n"));
+            OutputDebugStringWithInfo(_T("Create pipe failed.\r\n"),
+                                      __FILET__,
+                                      __LINE__);
 #endif // DEBUG
+
             break;
         }
 
-        // 启动CMD进程
+        // Start CMD process.
         TCHAR szCmdline[] = _T("cmd.exe");
         STARTUPINFO stSi = { 0 };
         stSi.cb = sizeof(stSi);
@@ -381,8 +401,11 @@ BOOL OnCMDOrder(SOCKET sctTargetSocket,
             szBuffer,
             uiLen);
     csOrder.ReleaseBuffer();
-    // 清空接收临时缓冲区
-    memset(szBuffer, 0, uiLen);
+
+    if (_T("exit\r\n") != csOrder)
+    {
+        memset(szBuffer, 0, uiLen);
+    }
     
     // 发送消息给主进程有CMD指令要处理
     BOOL bRet = pstClientInfo->pTeleClientDlg_->
@@ -609,20 +632,21 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
         case PT_CMDCOMMAND_END:
         {
 #ifdef DEBUG
-            OutputDebugStringWithInfo(_T("Get cmd command end."),
+            OutputDebugStringWithInfo(_T("Get cmd command end.\r\n"),
                                       __FILET__,
                                       __LINE__);
 #endif // DEBUG
             TCHAR *szEndOrder = _T("exit\r\n");
             bRet = OnCMDOrder(sctTargetSocket,
                               (char *)szEndOrder,
-                              ref_stHeader.dwSize_,
+                              (_tcslen(szEndOrder) + 1) * sizeof(TCHAR),
                               pstClientInfo,
                               IOCP);
             if (!bRet)
             {
 #ifdef DEBUG
-            OutputDebugStringWithInfo(_T("Deal with cmd command end failed."),
+            OutputDebugStringWithInfo(_T("Deal with cmd command"
+                                         "end failed.\r\n"),
                                       __FILET__,
                                       __LINE__);
 #endif // DEBUG
@@ -636,13 +660,23 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
             bRet = OnCmdCommandStart(pstClientInfo);
             if (!bRet)
             {
-                OutputDebugString(_T("启动CMD失败\r\n"));
+#ifdef DEBUG
+                OutputDebugStringWithInfo(_T("Start CMD failed.\r\n"),
+                                          __FILET__,
+                                          __LINE__);
+#endif // DEBUG
+
             }
             break;
         }
         case PT_CMD_ORDER:
         {
-            OutputDebugString(_T("收到CMD指令\r\n"));
+#ifdef DEBUG
+            OutputDebugStringWithInfo(_T("Recieve CMD order.\r\n"),
+                                      __FILET__,
+                                      __LINE__);
+#endif // DEBUG
+
             bRet = OnCMDOrder(sctTargetSocket,
                               szBuffer,
                               ref_stHeader.dwSize_,

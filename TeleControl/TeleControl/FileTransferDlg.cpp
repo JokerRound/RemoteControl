@@ -220,9 +220,9 @@ END_MESSAGE_MAP()
 
 void CFileTransferDlg::OnBnClickedBtnServerSkip()
 {
-    m_edtServerFilePath.GetWindowText(m_phServerFilePath);
+    m_edtServerFilePath.GetWindowText(m_pathServerFilePath);
 
-    if (m_phServerFilePath.IsDirectory())
+    if (m_pathServerFilePath.IsDirectory())
     {
         ShowFileList(m_lstServerFileList,
                      m_iServerActiveStyleIdx);
@@ -351,8 +351,8 @@ BOOL CFileTransferDlg::OnInitDialog()
     }
 
     m_cmbServerDriver.SetCurSel(0);
-    m_cmbServerDriver.GetLBText(0, m_phServerFilePath);
-    m_edtServerFilePath.SetWindowText(m_phServerFilePath);
+    m_cmbServerDriver.GetLBText(0, m_pathServerFilePath);
+    m_edtServerFilePath.SetWindowText(m_pathServerFilePath);
 
     // Show files of server client.
     ShowFileList(m_lstServerFileList,
@@ -440,8 +440,8 @@ BOOL CFileTransferDlg::OnInitDialog()
         }
     }
     m_cmbTargetHostDriver.SetCurSel(0);
-    m_cmbTargetHostDriver.GetLBText(0, m_phTartetHostFilePath);
-    m_edtTargetHostFilePath.SetWindowText(m_phTartetHostFilePath);
+    m_cmbTargetHostDriver.GetLBText(0, m_pathTartetHostFilePath);
+    m_edtTargetHostFilePath.SetWindowText(m_pathTartetHostFilePath);
 
 
     // Show filelist of target host.
@@ -523,7 +523,7 @@ void CFileTransferDlg::ShowFileList(CListCtrl &ref_lstTarget,
     {
         SendDataUseIOCP(m_pstClientInfo,
                         m_ref_IOCP,
-                        m_phTartetHostFilePath,
+                        m_pathTartetHostFilePath,
                         PT_FILE_LIST);
 
         WaitForSingleObject(m_hGetTargetFileListEvent, INFINITE);
@@ -601,7 +601,7 @@ void CFileTransferDlg::ShowFileList(CListCtrl &ref_lstTarget,
     else if (ref_lstTarget == m_lstServerFileList)
     {
         CFileFind Finder;
-        CString csWildcard(m_phServerFilePath + _T("\\*.*"));
+        CString csWildcard(m_pathServerFilePath + _T("\\*.*"));
 
         BOOL bWorking = Finder.FindFile(csWildcard);
 
@@ -710,7 +710,7 @@ BOOL CFileTransferDlg::BackParentDirctory(
     do
     {
         // Change path to parent.
-        bNoError = m_apphFilePath[eParticipantType]->RemoveFileSpec();
+        bNoError = m_appathFilePath[eParticipantType]->RemoveFileSpec();
         if (!bNoError)
         {
 #ifdef DEBUG
@@ -720,7 +720,7 @@ BOOL CFileTransferDlg::BackParentDirctory(
 
         // Put parent path into edit control.
         m_apedtPath[eParticipantType]->SetWindowText(
-            *m_apphFilePath[eParticipantType]);
+            *m_appathFilePath[eParticipantType]);
 
         // Skip.
         (this->*m_apfncClickBtnSkip[eParticipantType])();
@@ -785,7 +785,7 @@ void CFileTransferDlg::OnNMDblclkLstServerFilelist(NMHDR *pNMHDR,
         if (csTargetFileTitle == _T(".."))
         {
             BackParentDirctory(FTPT_SERVER);
-            m_edtServerFilePath.SetWindowText(m_phServerFilePath);
+            m_edtServerFilePath.SetWindowText(m_pathServerFilePath);
             return;
         }
         else if (csTargetFileTitle == _T("."))
@@ -794,7 +794,7 @@ void CFileTransferDlg::OnNMDblclkLstServerFilelist(NMHDR *pNMHDR,
             return;
         }
 
-        m_phServerFilePath.Append(csTargetFileTitle);
+        m_pathServerFilePath.Append(csTargetFileTitle);
         
         OnBnClickedBtnServerSkip();
     }
@@ -820,7 +820,7 @@ void CFileTransferDlg::OnCbnSelchangeCmbServerFilelistStyle()
 void CFileTransferDlg::OnCbnSelchangeCmbServerDriver()
 {
     int iIdx = m_cmbServerDriver.GetCurSel();
-    m_cmbServerDriver.GetLBText(iIdx, m_phServerFilePath);
+    m_cmbServerDriver.GetLBText(iIdx, m_pathServerFilePath);
 
     // Show file list.
     ShowFileList(m_lstServerFileList,
@@ -843,7 +843,7 @@ void CFileTransferDlg::OnCbnSelchangeCmbTargethostFilelistStyle()
 void CFileTransferDlg::OnCbnSelchangeCmbTargethostDriver()
 {
     int iIdx = m_cmbServerDriver.GetCurSel();
-    m_cmbServerDriver.GetLBText(iIdx, m_phServerFilePath);
+    m_cmbServerDriver.GetLBText(iIdx, m_pathServerFilePath);
 
     ShowFileList(m_lstTargetHostFileList,
                  m_iTargetHostActiveStyleIdx);
@@ -852,9 +852,9 @@ void CFileTransferDlg::OnCbnSelchangeCmbTargethostDriver()
 // Deal with click the 'go' button of target host.
 void CFileTransferDlg::OnBnClickedBtnTargethostSkip()
 {
-    m_edtTargetHostFilePath.GetWindowText(m_phTartetHostFilePath);
+    m_edtTargetHostFilePath.GetWindowText(m_pathTartetHostFilePath);
 
-    if (m_phTartetHostFilePath.IsDirectory())
+    if (m_pathTartetHostFilePath.IsDirectory())
     {
         ShowFileList(m_lstTargetHostFileList,
                      m_iTargetHostActiveStyleIdx);
@@ -888,9 +888,9 @@ void CFileTransferDlg::OnBnClickedBtnGetfile()
         CString csFileSize;
 
         // Get full path.
-        CPath phFileNameWithPathSrc = m_phTartetHostFilePath;
+        CPath phFileNameWithPathSrc = m_pathTartetHostFilePath;
 
-        csFilesListSendToTargetHost = m_phTartetHostFilePath + _T("?");
+        csFilesListSendToTargetHost = m_pathTartetHostFilePath + _T("?");
 
         // Traversing Item.
         while (posI)

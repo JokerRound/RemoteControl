@@ -9,7 +9,7 @@ class CCommunicationIOCP
 {
 private:
     HANDLE m_hIOCP = NULL;
-    HANDLE *m_phthdArray = NULL;
+    HANDLE *m_pahThreadArray = NULL;
     // 线程池最大线程数量
     DWORD m_dwMaxThreadNum = 0;
     // 当前线程池中的数量
@@ -45,13 +45,13 @@ public:
 
 BOOL SendDataUseIOCP(_In_ CLIENTINFO *&ref_pstClientInfo,
                      _In_ CCommunicationIOCP &ref_IOCP,
-                     _In_ CString &ref_csData,
+                     _In_ const CString &ref_csData,
                      _In_ PACKETTYPE ePacketType);
 
 
 BOOL SendDataUseIOCP(_In_ CLIENTINFO *&ref_pstClientInfo,
                      _In_ CCommunicationIOCP &ref_IOCP,
-                     _In_ CString &ref_csData,
+                     _In_ const CString &ref_csData,
                      _In_ const DWORD &ref_dwSize,
                      _In_ CString &ref_csFileFullName,
                      _In_ const ULONGLONG &ref_ullFilePointPos,

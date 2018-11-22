@@ -11,14 +11,14 @@ class CProcessManagerDlg : public CDialogEx
     DECLARE_DYNAMIC(CProcessManagerDlg)
 
 public:
-    // 进程列表获取完毕事件
+    // The event for get process info successfully.
     HANDLE m_hGetProcessInfoOver = NULL;
 protected:
-    // IOCP
+    // IOCP object.
     CCommunicationIOCP &m_ref_IOCP;
-    // IP和端口
+    // Ip and port.
     CString &m_ref_csIPAndPort;
-    // Client上下文
+    // The context of client.
     PCLIENTINFO m_pstClientInfo = NULL;
 public:
     CProcessManagerDlg(CString &ref_csIPAndPort,
