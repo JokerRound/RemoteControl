@@ -60,7 +60,13 @@
     <ClInclude Include="assistFunc.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="FileTransportThread.h">
+    <ClInclude Include="WinThreadpool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Work.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkFileTransport.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -95,7 +101,13 @@
     <ClCompile Include="assistFunc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="FileTransportThread.cpp">
+    <ClCompile Include="WinThreadpool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Work.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="WorkFileTransport.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

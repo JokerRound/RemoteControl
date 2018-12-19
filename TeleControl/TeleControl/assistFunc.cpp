@@ -15,7 +15,7 @@ void OutputDebugStringWithInfo(const CString csOuput,
 
     OutputDebugString(csFinallyInfo);
 
-} //! OutputDebugStringWithInfo END
+} //! OutputDebugStringWithInfo() END
 
 
 // 
@@ -74,5 +74,5 @@ void GetErrorMessage(DWORD dwError, CString &csMessage)
     }
 
     LocalFree(hLocal);
-} //! GetErrorMessage END
+} //! GetErrorMessage() END
 

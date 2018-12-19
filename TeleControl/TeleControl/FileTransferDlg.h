@@ -7,12 +7,16 @@
 //
 // Modify Log:
 //      2018-11-13    Hoffman
-//      Info: Add below member variable.
-//              m_ullNextTaskId;
+//      Info: a. Add below member variable.
+//              a.1. m_ullNextTaskId;
 //
 //      2018-11-14    Hoffman
-//      Info: Add below member variable.
-//              m_adwStyle;
+//      Info: a. Add below member variable.
+//              a.1. m_adwStyle;
+//
+//      2018-11-27    Hoffman
+//      Info: a. Add below member variable.
+//              a.1. m_apMenu;
 //******************************************************************************
 
 #pragma once
@@ -22,6 +26,7 @@
 #include "StructShare.h"
 #include "FileTransportManager.h"
 #include "RecvFileDataThread.h"
+#include "FileTransferTaskListCtrl.h"
 
 // CFileTransferDlg ¶Ô»°¿ò
 typedef void (CFileTransferDlg::*PFNC_CLICKBTNSKIP)();
@@ -52,7 +57,7 @@ private:
     PCLIENTINFO m_pstClientInfo = NULL;
 
     // The id for next task.
-    ULONGLONG m_ullNextTaskId = 0;
+    ULONG m_ulNextTaskId = 0;
 
     // Thread recevie file data.
     CRecvFileDataThread *m_pthdRecvFileData = NULL;
@@ -60,6 +65,8 @@ private:
     CCriticalSection m_CriticalSection;
     CEvent *m_pevtHadFiletoReceive = NULL;
 
+    CMenu *m_apMenu[TOTAL_FTDMT_NUM] = { NULL };
+    CMenu *m_apTransportListMenu[TOTAL_TTLMT_NUM] = { NULL };
     const CString m_acsTaskType[NUM_FILETASKTYPE] = {
         _T("Download"),
         _T("Upload"),
@@ -67,6 +74,7 @@ private:
     const CString m_acsTaskStatus[NUM_FILETASKSTATUS] = {
         _T("Pause"),
         _T("Transporting..."),
+        _T("Pending"),
         _T("Error"),
         _T("Finish")
     };
@@ -141,7 +149,7 @@ public:
     // The combobox control of target host's driver.
     CComboBox m_cmbTargetHostDriver;
     // The list of transfer task.
-    CListCtrl m_lstTransferTaskList;
+    CFileTransferTaskListCtrl m_lstTransferTaskList;
     // The edit control of target host's path.
     CEdit m_edtTargetHostFilePath;
     // The path object of target host.
@@ -187,4 +195,5 @@ protected:
     afx_msg LRESULT OnFiledlgupdate(WPARAM wParam, LPARAM lParam);
 public:
     afx_msg void OnDestroy();
+    afx_msg void OnNMRClickLstTransfertask(NMHDR *pNMHDR, LRESULT *pResult);
 };

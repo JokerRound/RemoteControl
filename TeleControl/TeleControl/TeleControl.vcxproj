@@ -32,6 +32,7 @@
     <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -192,6 +193,7 @@
     <ClInclude Include="CommunicationIOCP.h" />
     <ClInclude Include="FileTransferDlg.h" />
     <ClInclude Include="FileTransferStruct.h" />
+    <ClInclude Include="FileTransferTaskListCtrl.h" />
     <ClInclude Include="FileTransportManager.h" />
     <ClInclude Include="HostListView.h" />
     <ClInclude Include="LogListView.h" />
@@ -219,6 +221,7 @@
     <ClCompile Include="CmdEdit.cpp" />
     <ClCompile Include="CommunicationIOCP.cpp" />
     <ClCompile Include="FileTransferDlg.cpp" />
+    <ClCompile Include="FileTransferTaskListCtrl.cpp" />
     <ClCompile Include="FileTransportManager.cpp" />
     <ClCompile Include="HostListView.cpp" />
     <ClCompile Include="LogListView.cpp" />

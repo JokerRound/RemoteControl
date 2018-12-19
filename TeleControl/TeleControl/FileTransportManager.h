@@ -56,7 +56,7 @@ public:
                            _In_ PFILETRANSPORTTASK pstTaskInfo);
 
     FILETRANSPORTTASK *GetTask(_In_ const CPath &ref_phFileNameWithPathDst);
-    FILETRANSPORTTASK *GetTask(_In_ const ULONGLONG &ref_dwTaskId);
+    FILETRANSPORTTASK *GetTask(_In_ const ULONG &ref_ulTaskId);
 
     void GetAllValue(std::vector<PFILETRANSPORTTASK> &ref_vctAllValue);
 

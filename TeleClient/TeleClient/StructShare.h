@@ -54,7 +54,7 @@ typedef struct tagPacketFormat
     DWORD           dwSize_;
     TCHAR           szFileFullName_[MAX_PATH + sizeof(TCHAR)];
     ULONGLONG       ullFilePointPos_;
-    ULONGLONG       ullTaskId_;
+    ULONG           ulTaskId_;
     char            szContent_[1];
 } PACKETFORMAT, *PPACKETFORMAT;
 
@@ -102,14 +102,6 @@ typedef struct tagClientInfo
     CTeleClientDlg *pTeleClientDlg_ = NULL;
 } CLIENTINFO, *PCLIENTINFO;
 
-// The parament of thread to transport file.
-typedef struct tagFileTransportThreadParam
-{
-    CString             *pcsFileListToGet_;
-    CTeleClientDlg      *pTeleClientDlg_;
-    CCommunicationIOCP  *pIOCP_;
-    PCLIENTINFO         pstClientInfo_;
-} FILETRANSPORTTHREADPARAM, *PFILETRANSPORTTHREADPARAM;
 
 
 // IOCP线程所需要的附加数据

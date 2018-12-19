@@ -1,3 +1,16 @@
+//******************************************************************************
+// License:     MIT
+// Author:      Hoffman
+// Create Time: 2018-07-24
+// Description: 
+//      The common type of be used by this project.
+//
+// Modify Log:
+//      2018-11-28    Hoffman
+//      Info: a. Modify below type.
+//              a.1 enum tagPacketType;
+//******************************************************************************
+
 #pragma once
 #ifndef STRUCTSHARE_H_
 #define STRUCTSHARE_H_
@@ -105,7 +118,7 @@ typedef struct tagPacketFormat
     DWORD           dwSize_;
     TCHAR           szFileFullName_[MAX_PATH + sizeof(TCHAR)];
     ULONGLONG       ullFilePointPos_;
-    ULONGLONG       ullTaskId_;
+    ULONG           ulTaskId_;
     char            szContent_[1];
 } PACKETFORMAT, *PPACKETFORMAT;
 #pragma pack(pop)

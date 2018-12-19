@@ -7,13 +7,20 @@
 //
 // Modify Log:
 //      2018-07-24    Hoffman
-//      Info: Add below functions.
-//              OnHandlePacket();
+//      Info: a. Add below functions.
+//              a.1. OnHandlePacket();
 //
 //      2018-11-22    Hoffman
-//      Info: Modify below functions.
-//              OnCMDOrder(): 
-//                  1. Add order content check.
+//      Info: a. Modify below functions.
+//              a.1. OnCMDOrder(): 
+//                  a.1.1. Add order content check.
+//
+//      2018-11-28    Hoffman
+//      Info: a. Add below functions.
+//              a.1. OnPauseCommand();
+//            b. Modify below functions.
+//              a.1. OnHandlePacket();
+//                  a.1.1. Add code deal with PT_FILECOMMAND_PAUSE;
 //******************************************************************************
 
 #include "stdafx.h"
@@ -284,6 +291,30 @@ BOOL OnGetFileCommand(SOCKET sctTargetSocket,
 
 } //! OnGetFileCommand END
 
+BOOL OnPauseCommand(SOCKET sctTargetSocket,
+                    char *szBuffer,
+                    size_t uiLen,
+                    PCLIENTINFO  pstClientInfo,
+                    CCommunicationIOCP &IOCP)
+{
+    // The filename with path in szBuffer.
+    CString csFileNameWithBuffer;
+
+    memmove(csFileNameWithBuffer.GetBufferSetLength(PACKET_CONTENT_MAXSIZE),
+            szBuffer,
+            uiLen);
+    csFileNameWithBuffer.ReleaseBuffer();
+
+    // Clean the temporary buffer of revice.
+    memset(szBuffer, 0, uiLen);
+
+    pstClientInfo->pTeleClientDlg_->SendMessage(WM_TASKPAUSE,
+                                                (WPARAM)&csFileNameWithBuffer,
+                                                (LPARAM)pstClientInfo);
+
+    return TRUE;
+} //! OnPauseCommand() END
+
 BOOL OnCmdCommandStart(PCLIENTINFO  pstClientInfo)
 {
     SECURITY_ATTRIBUTES stSa;
@@ -369,11 +400,13 @@ BOOL OnCmdCommandStart(PCLIENTINFO  pstClientInfo)
         CloseHandle(pstClientInfo->hServerCmdReadPipe_);
         pstClientInfo->hServerCmdReadPipe_ = INVALID_HANDLE_VALUE;
     }
+
     if (pstClientInfo->hServerCmdWritePipe_ != INVALID_HANDLE_VALUE)
     {
         CloseHandle(pstClientInfo->hServerCmdWritePipe_);
         pstClientInfo->hServerCmdWritePipe_ = INVALID_HANDLE_VALUE;
     }
+
     if (pstClientInfo->hCmdReadPipe_ != INVALID_HANDLE_VALUE)
     {
         CloseHandle(pstClientInfo->hCmdReadPipe_);
@@ -544,14 +577,12 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
     {
         case PT_HEARTBEAT:
         {
-            OutputDebugString(_T("收到服务器心跳回复包\r\n"));
             // 清空
             memset(szBuffer, 0, ref_stHeader.dwSize_);
             break;
         }
         case PT_FILE_LIST:
         {
-            OutputDebugString(_T("收到文件列表请求\r\n"));
             bRet = OnFileList(sctTargetSocket,
                               szBuffer,
                               ref_stHeader.dwSize_,
@@ -559,14 +590,12 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
                               IOCP);
             if (!bRet)
             {
-                OutputDebugString(_T("文件列表请求处理失败\r\n"));
             }
 
             break;
         }
         case PT_FILE_DEVICE:
         {
-            OutputDebugString(_T("收到盘符请求\r\n"));
             bRet = OnFileDevice(sctTargetSocket,
                                 szBuffer,
                                 ref_stHeader.dwSize_,
@@ -574,7 +603,6 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
                                 IOCP);
             if (!bRet)
             {
-                OutputDebugString(_T("盘符请求处理失败\r\n"));
             }
 
             break;
@@ -588,6 +616,15 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
                                     IOCP);
             break;
         }
+        case PT_FILECOMMAND_PAUSE:
+        {
+            bRet = OnPauseCommand(sctTargetSocket,
+                                  szBuffer,
+                                  ref_stHeader.dwSize_,
+                                  pstClientInfo,
+                                  IOCP);
+            break;
+        }
         case PT_SCREENPICTURE:
         {
             bRet = OnScreenPictrue(sctTargetSocket,
@@ -597,7 +634,6 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
                                    IOCP);
             if (!bRet)
             {
-                OutputDebugString(_T("盘符请求处理失败\r\n"));
             }
             break;
         }
@@ -608,16 +644,21 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
                                  ref_stHeader.dwSize_,
                                  pstClientInfo,
                                  IOCP);
-            if (!bRet)
+#ifdef DEBUG
+            if (bRet)
             {
-                OutputDebugString(_T("盘符请求处理失败\r\n"));
+                OutputDebugStringWithInfo(
+                    _T("Deal with PT_PROCESS_INFO over.\r\n"),
+                    __FILET__,
+                    __LINE__);
             }
+#endif // DEBUG
+
             break;
         }
         case PT_PROCESSCOMMAND_KILL:
         {
 #ifdef DEBUG
-            OutputDebugString(_T("收到kill进程的命令\r\n"));
 #endif // DEBUG
             bRet = OnProcessCommandKill(sctTargetSocket,
                                         szBuffer,
@@ -626,7 +667,6 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
                                         IOCP);
             if (!bRet)
             {
-                OutputDebugString(_T("盘符请求处理失败\r\n"));
             }
         }
         case PT_CMDCOMMAND_END:
@@ -656,7 +696,6 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
         }
         case PT_CMDCOMMAND_START:
         {
-            OutputDebugString(_T("收到启动CMD的命令\r\n"));
             bRet = OnCmdCommandStart(pstClientInfo);
             if (!bRet)
             {
@@ -684,13 +723,11 @@ BOOL OnHandlePacket(PACKETTYPE ePacketType,
                               IOCP);
             if (!bRet)
             {
-                OutputDebugString(_T("CMD指令处理失败\r\n"));
             }
             break;
         }
         default:
         {
-            OutputDebugString(_T("数据包类型不在处理范围内\r\n"));
             break;
         }
     } //! switch "Packet's type" END

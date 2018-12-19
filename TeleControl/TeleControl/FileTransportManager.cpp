@@ -7,10 +7,10 @@
 //
 // Modify Log:
 //      2018-11-10    Hoffman
-//      Info: Move achieve of below methods from FileTransferDlg.cpp.
-//              InsertFileDataToQueue();
-//              GetFileDataFromQueue();
-//              CheckFileDataQueueEmpty();
+//      Info: a. Move achieve of below methods from FileTransferDlg.cpp.
+//              a.1. InsertFileDataToQueue();
+//              a.2. GetFileDataFromQueue();
+//              a.3. CheckFileDataQueueEmpty();
 //
 //      2018-11-13    Hoffman
 //      Info: Modify achieve of below member methods.
@@ -63,7 +63,7 @@ FILETRANSPORTTASK *CFileTransportManager::GetTask(
     {
         pstTargetTask = m_ctGetFileTaskInfo.GetNext(posI);
         if (NULL != pstTargetTask &&
-            pstTargetTask->phFileNameWithPathDst_.m_strPath ==
+            pstTargetTask->pathFileNameWithPathDst_.m_strPath ==
             ref_phFileNameWithPathDst.m_strPath)
         {
             break;
@@ -75,7 +75,7 @@ FILETRANSPORTTASK *CFileTransportManager::GetTask(
 } //! CFileTransportManager::GetTask END
 
 // Traversing the chain table for founding the target task by id.
-FILETRANSPORTTASK *CFileTransportManager::GetTask(const ULONGLONG &ref_dwTaskId)
+FILETRANSPORTTASK *CFileTransportManager::GetTask(const ULONG &ref_ulTaskId)
 {
     FILETRANSPORTTASK *pstTargetTask = NULL;
 
@@ -86,7 +86,7 @@ FILETRANSPORTTASK *CFileTransportManager::GetTask(const ULONGLONG &ref_dwTaskId)
     {
         pstTargetTask = m_ctGetFileTaskInfo.GetNext(posI);
         if (NULL != pstTargetTask &&
-            pstTargetTask->ullId_ == ref_dwTaskId)
+            pstTargetTask->ulId_ == ref_ulTaskId)
         {
             break;
         }
@@ -201,7 +201,7 @@ BOOL CFileTransportManager::DeleteTaskAndFileObject(
 
                 pstTask = m_ctGetFileTaskInfo.GetNext(posI);
                 if (NULL != pstTask && 
-                    (pstTask->phFileNameWithPathDst_.m_strPath == 
+                    (pstTask->pathFileNameWithPathDst_.m_strPath == 
                     ref_phFileNameWithPathDst.m_strPath))
                 {
                     delete pstTask;

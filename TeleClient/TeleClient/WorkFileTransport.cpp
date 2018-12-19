@@ -1,43 +1,46 @@
 //******************************************************************************
 // License:     MIT
 // Author:      Hoffman
-// Create Time: 2018-07-24
+// GitHub:      https://github.com/JokerRound
+// Create Time: 2018-12-08
 // Description: 
-//      The ahcieve of class CFileTransportThread's member methods.
+//      The achieve of class CWorkFileTransport.
 //
 // Modify Log:
-//      2018-11-28    Hoffman
-//      Info: a. Modify below member methods.
-//              a.1. OnThreadEventRun();
-//                  a.1.1. Add the pause check.
+//      2018-12-08    Hoffman
+//      Info: a. Add below member method.
+//              a.1. WorkBody();
 //******************************************************************************
 
 #include "stdafx.h"
+#include "WorkFileTransport.h"
 #include "StructShare.h"
 #include "FileTransportThread.h"
 #include "TeleClientDlg.h"
 #include "CommunicationIOCP.h"
 
 
-CFileTransportThread::CFileTransportThread()
+CWorkFileTransport::CWorkFileTransport(PVOID pvContext)
+{
+    m_stParam = *(PFILETRANSPORTTHREADPARAM)pvContext;
+}
+
+CWorkFileTransport::~CWorkFileTransport()
 {
 }
 
 
-CFileTransportThread::~CFileTransportThread()
-{
-}
-
-bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
+BOOL CWorkFileTransport::WorkBody() noexcept(FALSE)
 {
 #ifdef DEBUG
     DWORD dwError = -1;
     CString csErrorMessage;
+    DWORD dwLine = 0;
+    BOOL bOutputErrMsg = FALSE;
 #endif // DEBUG
 
     // Analysis parament.
-    PFILETRANSPORTTHREADPARAM pFileTransportThreadParam =
-        (PFILETRANSPORTTHREADPARAM)lpParam;
+    PFILETRANSPORTTHREADPARAM pFileTransportThreadParam = &m_stParam;
     CTeleClientDlg *pTeleClientDlg = 
         pFileTransportThreadParam->pTeleClientDlg_;
     CString csFileListToGet = *(pFileTransportThreadParam->pcsFileListToGet_);
@@ -71,9 +74,8 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
         if (!bRet)
         {
 #ifdef DEBUG
-            dwError = GetLastError();
-            GetErrorMessage(dwError, csErrorMessage);
-            OutputDebugStringWithInfo(csErrorMessage, __FILET__, __LINE__);
+            bOutputErrMsg = TRUE;
+            dwLine = __LINE__;
 #endif // DEBUG
             break;
         }
@@ -113,9 +115,8 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
             if (!bRet)
             {
 #ifdef DEBUG
-                dwError = GetLastError();
-                GetErrorMessage(dwError, csErrorMessage);
-                OutputDebugStringWithInfo(csErrorMessage, __FILET__, __LINE__);
+                bOutputErrMsg = TRUE;
+                dwLine = __LINE__;
 #endif // DEBUG
                 break;
             }
@@ -144,6 +145,14 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
 
                 if (0 == dwSize)
                 {
+                    // File data transport over.
+#ifdef DEBUG
+                    OutputDebugStringWithInfo(
+                        _T("File data transport over.\r\n"),
+                        __FILET__,
+                        __LINE__);
+#endif // DEBUG
+
                     break;
                 }
 
@@ -168,9 +177,37 @@ bool CFileTransportThread::OnThreadEventRun(LPVOID lpParam)
             fTargetFile.Close();
         } while (FALSE); // while "Begin file operation" END
 
+#ifdef DEBUG
+        if (bOutputErrMsg && dwLine != 0)
+        {
+            dwError = GetLastError();
+            GetErrorMessage(dwError, csErrorMessage);
+            OutputDebugStringWithInfo(csErrorMessage, __FILET__, dwLine);
+
+            bOutputErrMsg = FALSE;
+            dwLine = 0;
+        }
+#endif // DEBUG 
+
         // Get remainder text.
         strFileList = sMatchResult.suffix();
     } //! while "Get filename and transport data" END
 
+#ifdef DEBUG
+    if (bOutputErrMsg && dwLine != 0)
+    {
+        dwError = GetLastError();
+        GetErrorMessage(dwError, csErrorMessage);
+        OutputDebugStringWithInfo(csErrorMessage, __FILET__, dwLine);
+
+        bOutputErrMsg = FALSE;
+        dwLine = 0;
+    }
+
+    OutputDebugStringWithInfo(_T("The file transport work executive over.\r\n"),
+                              __FILET__,
+                              __LINE__);
+#endif // DEBUG 
+
     return bRet;
-} //! CFileTransportThread::OnThreadEventRun END
+} //! CWorkFileTransport::WorkBody() END

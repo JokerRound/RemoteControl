@@ -7,16 +7,24 @@
 //
 // Modify Log:
 //      2018-11-01    Hoffman
-//      Info: Add achieve of below member method.
-//              OnThreadEventRun();
-//      2018-11-13    Hoffman
+//      Info: a. Add achieve of below member method.
+//              a.1. OnThreadEventRun();
 //
-//      Info: Modify ahcieve of below member method.
-//              OnThreadEventRun(): Remove for check destination file 
-//                                  exist or not.
+//      2018-11-13    Hoffman
+//      Info: a. Modify ahcieve of below member method.
+//              a.1. OnThreadEventRun(): 
+//                  a.1.1. Remove for check destination exist or not.
+//
 //      2018-11-14    Hoffman
-//      Info: Modify achieve of below member methods.
-//              OnThreadEventRun(): 1. Modify deal with it had occured error.
+//      Info: a. Modify achieve of below member methods.
+//              a.1. OnThreadEventRun(): 
+//                  a.1.1. Modify deal with it had occured error.
+//
+//      2018-12-18    Hoffman
+//      Info: a. Modify below member method.
+//              a.1. OnThreadEventRun():  
+//                  a.1.1. Add bHasError flag to check it needs to send messaege
+//                         to FileTransportDlg or not.
 //******************************************************************************
 
 #include "stdafx.h"
@@ -45,6 +53,7 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
     CFileTransferDlg *pFileTransferDlg = (CFileTransferDlg *)lpParam;
 
     BOOL bRet = FALSE;
+    BOOL bHasError = FALSE;
     // Work start.
     while (TRUE)
     {
@@ -63,7 +72,6 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
             continue;
         }
 
-
         BOOL bNoError = FALSE;
         PFILEDATAINQUEUE pstFileData = NULL;
         PFILETRANSPORTTASK pstTargetTask = NULL;
@@ -79,13 +87,14 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
                                           __FILET__,
                                           __LINE__);
 #endif // DEBUG
+                bHasError = TRUE;
                 break;
             }
 
             // Get currently file transport task.
             pstTargetTask = 
                 pFileTransferDlg->m_TransportTaskManager.GetTask(
-                    pstFileData->ullTaskId_);
+                    pstFileData->ulTaskId_);
             if (NULL == pstTargetTask)
             {
 #ifdef DEBUG
@@ -94,6 +103,7 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
                                           __FILET__,
                                           __LINE__);
 #endif // DEBUG
+                bHasError = TRUE;
                 break;
             }
             
@@ -104,7 +114,7 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
             {
                 pfTargetFile =
                     pFileTransferDlg->m_TransportTaskManager.GetFileObject(
-                        pstTargetTask->phFileNameWithPathDst_);
+                        pstTargetTask->pathFileNameWithPathDst_);
                 if (NULL != pfTargetFile)
                 {
                     // Get successfully, jump out.
@@ -113,7 +123,7 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
 
 
                 // Open the file.
-                hTargetFile = CreateFile(pstTargetTask->phFileNameWithPathDst_,
+                hTargetFile = CreateFile(pstTargetTask->pathFileNameWithPathDst_,
                                          GENERIC_WRITE,
                                          NULL,
                                          NULL,
@@ -145,7 +155,7 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
 
                 // Add this file object into file transport manager.
                 pFileTransferDlg->m_TransportTaskManager.InsertFileObject(
-                    pstTargetTask->phFileNameWithPathDst_,
+                    pstTargetTask->pathFileNameWithPathDst_,
                     pfTargetFile);
 
             } while (FALSE); //! while "Get file object corresponded task" END
@@ -159,6 +169,7 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
                 }
 
                 // Jmp
+                bHasError = TRUE;
                 break;
             }
 
@@ -188,15 +199,19 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
                 pstFileData = NULL;
             }
 
-
             // Delete the had finished task.
             if (pstTargetTask->ullTransmissionSize_ ==
                 pstTargetTask->ullFileTotalSize_)
             {
-                bRet =
-                    pFileTransferDlg->
+#ifdef DEBUG
+                OutputDebugStringWithInfo(_T("File transport successful!\r\n"),
+                                          __FILET__,
+                                          __LINE__);
+#endif // DEBUG
+
+                bRet = pFileTransferDlg->
                     m_TransportTaskManager.DeleteTaskAndFileObject(
-                        pstTargetTask->phFileNameWithPathDst_);
+                        pstTargetTask->pathFileNameWithPathDst_);
 #ifdef DEBUG
                 if (!bRet)
                 {
@@ -205,9 +220,8 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
                                               __LINE__);
                 }
 #endif // DEBUG
+                pstTargetTask = NULL;
             }
-
-            continue;
         } while (FALSE); // while "Deal with file data" END
 
 #ifdef DEBUG
@@ -216,21 +230,31 @@ bool CRecvFileDataThread::OnThreadEventRun(LPVOID lpParam)
             dwError = GetLastError();
             GetErrorMessage(dwError, csErrorMessage);
             OutputDebugStringWithInfo(csErrorMessage, __FILET__, dwLine);
+            
+            bOutputErrMsg = FALSE;
+            dwLine = 0;
         }
 #endif // DEBUG
 
         // Notify the file transport dialog to update UI 
         // the task had occured error.
-        if (NULL != pstTargetTask)
+        if (bHasError)
         {
-            pstTargetTask->eTaskStatus_ = FTS_ERROR; 
-            pFileTransferDlg->SendMessage(WM_FILEDLGUPDATE,
-                                          (WPARAM)pstTargetTask,
-                                          FDUT_ERROR);
-        }
-
-
+            if (NULL != pstTargetTask)
+            {
+                pstTargetTask->eTaskStatus_ = FTS_ERROR;
+                pFileTransferDlg->SendMessage(WM_FILEDLGUPDATE,
+                                              (WPARAM)pstTargetTask,
+                                              FDUT_ERROR);
+            }
+        }    
     } //! while "Work start" END
 
-    return false;
+#ifdef DEBUG
+    OutputDebugStringWithInfo(_T("The receive file data thread quit.\r\n"),
+                              __FILET__,
+                              __LINE__);
+#endif // DEBUG
+
+    return true;
 } //! CRecvFileDataThread::OnThreadEventRun END 

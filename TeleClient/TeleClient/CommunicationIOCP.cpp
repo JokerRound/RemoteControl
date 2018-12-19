@@ -7,17 +7,17 @@
 //
 // Modify Log:
 //      2018-10-24    Hoffman
-//      Info: Add achieve of below member method.
-//              SendDataUseIOCP();
+//      Info: a. Add achieve of below member method.
+//              a.1 SendDataUseIOCP();
 //
 //      2018-11-22    Hoffman
-//      Info: Midify achieve of below methods.
-//              Create(): 
-//                  1. Close thread handle directly.
-//                  2. Change execution structure.
-//                  3. Add some error check.
-//              ThreadWork():
-//                  1. Add some error check.
+//      Info: a. Midify achieve of below methods.
+//              a.1 Create(): 
+//                  a.1.1. Close thread handle directly.
+//                  a.1.2. Change execution structure.
+//                  a.1.3. Add some error check.
+//              a.2 ThreadWork():
+//                  a.2.1. Add some error check.
 //******************************************************************************
 
 #include "stdafx.h"
@@ -204,7 +204,6 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
                                               __FILET__,
                                               __LINE__);
 #endif // DEBUG
-
                 }
                 else
                 {
@@ -227,8 +226,6 @@ DWORD CCommunicationIOCP::ThreadWork(LPVOID lpParam)
 #endif // DEBUG 
             continue;
         }
-
-
 
         // Get overlap struct.
         POVERLAPPEDWITHDATA pstData = CONTAINING_RECORD(pstOverlapped,
@@ -519,7 +516,7 @@ BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
                      const DWORD &ref_dwSize,
                      CString &ref_csFileFullName,
                      const ULONGLONG &ref_ullFilePointPos,
-                     const ULONGLONG &ref_ullTaskId)
+                     const ULONG &ref_ulTaskId)
 {
     PPACKETFORMAT pstPacket = 
         (PPACKETFORMAT)ref_pstClientInfo->szSendTmpBuffer_;
@@ -537,7 +534,7 @@ BOOL SendDataUseIOCP(CLIENTINFO *&ref_pstClientInfo,
             ref_csFileFullName.GetBuffer(),
             MAX_PATH); 
     pstPacket->ullFilePointPos_ = ref_ullFilePointPos;
-    pstPacket->ullTaskId_ = ref_ullTaskId;
+    pstPacket->ulTaskId_ = ref_ulTaskId;
 
     // Copy
     memmove(pstPacket->szContent_,
